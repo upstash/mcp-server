@@ -25,6 +25,8 @@ This lets you use Claude Desktop, or any MCP Client, to use natural language to 
 
 See the [troubleshooting guide](https://modelcontextprotocol.io/quickstart#troubleshooting) in the MCP documentation. You can also reach out to us at [Discord](https://discord.com/invite/w9SenAtbme).
 
+> NOTE: If you are using a node version manager like nvm or fnm, please check [this issue](https://github.com/modelcontextprotocol/servers/issues/64#issuecomment-2530337743). You should change the `node` command in the MCP config to the absolute path of the node binary.
+
 ## Tools
 
 ### Redis

@@ -7,7 +7,9 @@ import { log } from "./log";
 import { config } from "./config";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const packageJson = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "package.json"), "utf8"));
+const _packageJson = JSON.parse(
+  fs.readFileSync(path.join(__dirname, "..", "package.json"), "utf8")
+);
 const claudeConfigPath = path.join(
   os.homedir(),
   "Library",

@@ -50,5 +50,50 @@ Clone the project and run:
 ```bash
 bun install
 npm run watch
-node dist/index.js init <UPSTASH_EMAIL> <UPSTASH_API_KEY>
+```
+
+This will continuously build the project and watch for changes.
+
+For testing, you can create a `.env` file in the same directory as the project with the following content:
+
+```bash
+UPSTASH_EMAIL=<UPSTASH_EMAIL>
+UPSTASH_API_KEY=<UPSTASH_API_KEY>
+```
+
+This will be used for setting the Claude config and running mcp inspector.
+
+### Testing with Claude Desktop
+
+To install the Claude Desktop config for local development, run the following command:
+
+```bash
+npm run install
+```
+
+This will add an `upstash` entry to your MCP config file that points to the local build of the package.
+
+```json
+{
+  "upstash": {
+    "command": "node",
+    "args": ["<path-to-repo>/dist/index.js", "run", "<UPSTASH_EMAIL>", "<UPSTASH_API_KEY>"]
+  }
+}
+```
+
+You can now use Claude Desktop to run Upstash commands.
+
+To view the logs from the MCP Server in real time, run the following command:
+
+```bash
+npm run logs
+```
+
+### Testing with MCP Inspector
+
+You can also use the MCP Inspector to test the tools.
+
+```bash
+npm run inspector
 ```

@@ -16,8 +16,11 @@
   },
   "scripts": {
     "build": "tsup && node -e \"require('fs').chmodSync('dist/index.js', '755')\"",
-    "dev": "tsup --watch",
+    "watch": "npm run build && tsup --watch",
     "inspector": "npx @modelcontextprotocol/inspector node --enable-source-maps dist/index.js run",
+    "install": "node ./dist/index.js init",
+    "logs": "tail -n 20 -f ~/Library/Logs/Claude/mcp*.log",
+    "test": "bun test",
     "fmt": "prettier --write .",
     "lint": "eslint \"**/*.{js,ts,tsx}\" --quiet --fix"
   },

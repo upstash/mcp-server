@@ -18,15 +18,17 @@ const claudeConfigPath = path.join(
 
 const UPSTASH_MCP_KEY = "upstash";
 
-export async function init({ executablePath }: { executablePath: string; }) {
-  // If the executable path is a local path to the dist/index.js file, use it directly
-  // Otherwise, use the name of the package to always load the latest version from remote
-  const serverPath = executablePath.includes("dist/index.js") ? executablePath : packageJson.name;
-
-  const upstashConfig = {
-    command: "npx",
-    args: ["-y", serverPath, "run", config.email, config.apiKey],
-  };
+export async function init({ executablePath }: { executablePath: string }) {
+  const isLocal = executablePath.includes("dist/index.js");
+  const upstashConfig = isLocal
+    ? {
+        command: "node",
+        args: [executablePath, "run", config.email, config.apiKey],
+      }
+    : {
+        command: "npx",
+        args: ["-y", "@upstash/mcp-server-upstash", "run", config.email, config.apiKey],
+      };
 
   const configDir = path.dirname(claudeConfigPath);
   if (!fs.existsSync(configDir)) {
@@ -41,7 +43,15 @@ export async function init({ executablePath }: { executablePath: string; }) {
     : { mcpServers: {} };
 
   if (UPSTASH_MCP_KEY in (existingConfig?.mcpServers || {})) {
-    log(chalk.yellow("Replacing existing Upstash MCP config..."));
+    log(chalk.yellow("Upstash entry already exists. Overriding it."));
+  }
+
+  if (isLocal) {
+    log(
+      chalk.yellow(
+        "Local executable detected. Using 'node' and absolute path instead of 'npx' for development."
+      )
+    );
   }
 
   const newConfig = {
@@ -53,5 +63,18 @@ export async function init({ executablePath }: { executablePath: string; }) {
   };
 
   fs.writeFileSync(claudeConfigPath, JSON.stringify(newConfig, null, 2));
-  log(chalk.green(`Config written to: ${claudeConfigPath}`));
+
+  log(
+    chalk.blue(
+      "\n" +
+        JSON.stringify(
+          {
+            [UPSTASH_MCP_KEY]: upstashConfig,
+          },
+          null,
+          2
+        ).replaceAll(config.apiKey, "********")
+    )
+  );
+  log(chalk.green(`Config written to: "${claudeConfigPath.replace(os.homedir(), "~")}"`));
 }

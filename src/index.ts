@@ -58,7 +58,11 @@ function parseArguments() {
 
     testConnection();
 
-    main();
+    // Start the server
+    main().catch((error) => {
+      console.error("Server error:", error);
+      process.exit(1);
+    });
   } else {
     throw new Error(`Unknown command: ${cmd}. Expected 'init' or 'run'. ${USAGE_GENERAL}`);
   }
@@ -76,9 +80,3 @@ try {
   console.error(error.message);
   process.exit(1);
 }
-
-// eslint-disable-next-line unicorn/prefer-top-level-await
-main().catch((error) => {
-  console.error("Server error:", error);
-  process.exit(1);
-});

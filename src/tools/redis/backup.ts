@@ -23,10 +23,10 @@ export const redisBackupTools = {
     description: `Delete a backup of a specific Upstash redis database.`,
     inputSchema: z.object({
       database_id: z.string().describe("The ID of the database to delete a backup from."),
-      backup_name: z.string().describe("The name of the backup to delete."),
+      backup_id: z.string().describe("The ID of the backup to delete."),
     }),
-    handler: async ({ database_id, backup_name }) => {
-      await http.delete(["v2/redis/delete-backup", database_id, backup_name]);
+    handler: async ({ database_id, backup_id}) => {
+      await http.delete(["v2/redis/delete-backup", database_id, backup_id]);
 
       return "OK";
     },
@@ -55,7 +55,7 @@ export const redisBackupTools = {
       database_id: z.string().describe("The ID of the database to list backups for."),
     }),
     handler: async ({ database_id }) => {
-      const backups = await http.get<RedisBackup[]>(["v2/redis/list-backups", database_id]);
+      const backups = await http.get<RedisBackup[]>(["v2/redis/list-backup", database_id]);
 
       return json(backups);
     },

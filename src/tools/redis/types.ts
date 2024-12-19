@@ -1,11 +1,44 @@
 export type RedisDatabase = {
   database_id: string;
   database_name: string;
-  password: string;
-  endpoint: string;
-  port: number;
+  database_type: string;
   region: string;
-  creation_time: number;
+  type: string;
+  primary_members: string[];
+  all_members: string[];
+  primary_region: string;
+  read_regions: string[];
+  port: number;
+  creation_time: string;
+  budget: number;
+  state: string;
+  password: string;
+  user_email: string;
+  endpoint: string;
+  tls: boolean;
+  eviction: boolean;
+  auto_upgrade: boolean;
+  consistent: boolean;
+  reserved_per_region_price: number;
+  modifying_state: string;
+  rest_token: string;
+  read_only_rest_token: string;
+  db_max_clients: number;
+  db_max_request_size: number;
+  db_resource_size: string;
+  db_type: string;
+  db_disk_threshold: number;
+  db_max_entry_size: number;
+  db_memory_threshold: number;
+  db_conn_idle_timeout: number;
+  db_lua_timeout: number;
+  db_lua_credits_per_min: number;
+  db_store_max_idle: number;
+  db_max_loads_per_sec: number;
+  db_max_commands_per_second: number;
+  db_request_limit: number;
+  db_acl_enabled: string;
+  db_acl_default_user_status: string;
 };
 
 export type RedisBackup = {

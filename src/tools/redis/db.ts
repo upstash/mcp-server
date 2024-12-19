@@ -63,7 +63,27 @@ export const redisDbOpsTools = {
     handler: async () => {
       const dbs = await http.get<RedisDatabase[]>("v2/redis/databases");
 
-      return json(dbs);
+      return json(
+        // Only the important fields
+        dbs.map((db) => ({
+          database_id: db.database_id,
+          database_name: db.database_name,
+          database_type: db.database_type,
+          region: db.region,
+          type: db.type,
+          primary_region: db.primary_region,
+          read_regions: db.read_regions,
+          creation_time: db.creation_time,
+          budget: db.budget,
+          state: db.state,
+          password: db.password,
+          endpoint: db.endpoint,
+          rest_token: db.rest_token,
+          read_only_rest_token: db.read_only_rest_token,
+          db_acl_enabled: db.db_acl_enabled,
+          db_acl_default_user_status: db.db_acl_default_user_status,
+        }))
+      );
     },
   }),
 

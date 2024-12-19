@@ -2,6 +2,9 @@ import type { CallToolResultSchema } from "@modelcontextprotocol/sdk/types.js";
 import type { ZodSchema } from "zod";
 import { z } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
+import { MAX_MESSAGE_LENGTH } from "./settings";
+
+type HandlerResponse = string | string[] | z.infer<typeof CallToolResultSchema>;
 
 export type CustomTool<TSchema extends ZodSchema = ZodSchema> = {
   description: string;
@@ -19,10 +22,27 @@ export type CustomTool<TSchema extends ZodSchema = ZodSchema> = {
    * If result is an array of strings, each string will be displayed as a separate text block.
    * You can also return a CallToolResult object to display more complex content.
    */
-  handler: (
-    input: z.infer<TSchema>
-  ) => Promise<string | string[] | z.infer<typeof CallToolResultSchema>>;
+  handler: (input: z.infer<TSchema>) => Promise<HandlerResponse>;
 };
+
+export function handlerResponseToCallResult(
+  response: HandlerResponse
+): z.infer<typeof CallToolResultSchema> {
+  if (typeof response === "string" || Array.isArray(response)) {
+    const array = Array.isArray(response) ? response : [response];
+
+    // Truncate messages that are too long
+    const truncatedArray = array.map((item) =>
+      item.length > MAX_MESSAGE_LENGTH
+        ? `${item.slice(0, MAX_MESSAGE_LENGTH)}... (truncated)`
+        : item
+    );
+
+    return {
+      content: truncatedArray.map((text) => ({ type: "text", text })),
+    };
+  } else return response;
+}
 
 function convertToJsonSchema(schema: ZodSchema) {
   const jsonSchema = zodToJsonSchema(schema);

@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { json, tool } from "..";
 import { http } from "../../http";
-import type { RedisDatabase } from "./types";
+import type { RedisDatabase, RedisUsageResponse, UsageData } from "./types";
 
 const readRegionSchema = z.union([
   z.literal("us-east-1"),
@@ -135,4 +135,65 @@ All sizes are in bytes
       return json(updatedDb);
     },
   }),
+
+  redis_database_get_usage_stats: tool({
+    description: `Get usage statistics of an Upstash redis database over a period of time.
+Available stats: read_latency_mean, write_latency_mean, keyspace, throughput (cmds per second), daily_net_commands, diskusage, command_counts (stats of every command seperately).`,
+    inputSchema: z.object({
+      id: z.string().describe("The ID of your database."),
+      period: z
+        .union([
+          z.literal("1h"),
+          z.literal("3h"),
+          z.literal("12h"),
+          z.literal("1d"),
+          z.literal("3d"),
+          z.literal("7d"),
+        ])
+        .describe("The period of the stats."),
+      type: z
+        .union([
+          z.literal("read_latency_mean"),
+          z.literal("write_latency_mean"),
+          z.literal("keyspace"),
+          z.literal("throughput"),
+          z.literal("daily_net_commands"),
+          z.literal("diskusage"),
+          z.literal("command_counts"),
+        ])
+        .describe("The type of stat to get"),
+    }),
+    handler: async ({ id, period, type }) => {
+      const stats = await http.get<RedisUsageResponse>([
+        "v2/redis/stats",
+        `${id}?period=${period}`,
+      ]);
+
+      if (type === "command_counts") {
+        return JSON.stringify(
+          stats.command_counts.map((c) => ({
+            command: c.metric_identifier,
+            ...parseUsageData(c.data_points),
+          }))
+        );
+      }
+
+      const stat = stats[type];
+
+      if (Array.isArray(stat)) {
+        return JSON.stringify(parseUsageData(stat));
+      }
+
+      return json(stats);
+    },
+  }),
+};
+
+const parseUsageData = (data: UsageData) => {
+  return {
+    start: data[0].x,
+    // last one can be null, so use the second last
+    end: data.at(-1)?.x || data.at(-2)?.x,
+    data: data.map((d) => [new Date(d.x).getTime(), d.y]),
+  };
 };

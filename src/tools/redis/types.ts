@@ -51,3 +51,18 @@ export type RedisBackup = {
   daily_backup: boolean;
   hourly_backup: boolean;
 };
+
+export type UsageData = { x: string; y: number }[];
+
+export type RedisUsageResponse = {
+  read_latency_mean: UsageData;
+  write_latency_mean: UsageData;
+  keyspace: UsageData;
+  throughput: UsageData;
+  daily_net_commands: number;
+  diskusage: UsageData;
+  command_counts: {
+    metric_identifier: string;
+    data_points: UsageData;
+  }[];
+};

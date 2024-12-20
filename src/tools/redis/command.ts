@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { json, tool } from "..";
+import { log } from "../../log";
 
 type RedisCommandResult =
   | {
@@ -36,6 +37,8 @@ NOTE: SCAN cursor [MATCH pattern] [COUNT count] [TYPE type]`,
 
       const result = (await req.json()) as RedisCommandResult;
 
+      log("command result:", result);
+
       if ("error" in result) {
         throw new Error("Redis error: " + result.error);
       }
@@ -57,7 +60,7 @@ NOTE: SCAN cursor [MATCH pattern] [COUNT count] [TYPE type]`,
     }),
 
     handler: async ({ database_rest_url, database_rest_token, commands }) => {
-      const req = await fetch(database_rest_url, {
+      const req = await fetch(database_rest_url + "/pipeline", {
         method: "POST",
         body: JSON.stringify(commands),
         headers: {
@@ -67,6 +70,8 @@ NOTE: SCAN cursor [MATCH pattern] [COUNT count] [TYPE type]`,
       });
 
       const result = (await req.json()) as RedisCommandResult[];
+
+      log("commands result:", result);
 
       if (result.some((r) => "error" in r)) {
         throw new Error("Some commands in the pipeline resulted in an error:\n" + json(result));

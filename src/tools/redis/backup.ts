@@ -5,7 +5,8 @@ import type { RedisBackup } from "./types";
 
 export const redisBackupTools = {
   redis_database_create_backup: tool({
-    description: `Create a backup of a specific Upstash redis database.`,
+    description: `Create a backup of a specific Upstash redis database.
+NOTE: Ask user to choose a name for the backup`,
     inputSchema: z.object({
       database_id: z.string().describe("The ID of the database to create a backup for."),
       backup_name: z.string().describe("A name for the backup."),
@@ -25,7 +26,7 @@ export const redisBackupTools = {
       database_id: z.string().describe("The ID of the database to delete a backup from."),
       backup_id: z.string().describe("The ID of the backup to delete."),
     }),
-    handler: async ({ database_id, backup_id}) => {
+    handler: async ({ database_id, backup_id }) => {
       await http.delete(["v2/redis/delete-backup", database_id, backup_id]);
 
       return "OK";

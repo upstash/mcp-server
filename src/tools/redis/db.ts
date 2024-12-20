@@ -19,7 +19,8 @@ const READ_REGIONS_DESCRIPTION =
 
 export const redisDbOpsTools = {
   redis_database_create_new: tool({
-    description: `Create a new Upstash redis database.`,
+    description: `Create a new Upstash redis database. 
+NOTE: Ask user for the region and name of the database.`,
     inputSchema: z.object({
       name: z.string().describe("Name of the database."),
       primary_region: readRegionSchema.describe(

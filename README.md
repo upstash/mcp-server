@@ -4,10 +4,11 @@ Model Context Protocol (MCP) is a [new, standardized protocol](https://modelcont
 
 This lets you use Claude Desktop, or any MCP Client, to use natural language to accomplish things on your Upstash account, e.g.:
 
-- "Create a new Redis database with 1GB of memory"
+- "Create a new Redis database in us-east-1"
 - "List all databases"
 - "See keys starting with "user:" in users-db"
 - "Create a backup"
+- "Give me the spikes in throughput for the last 7 days"
 
 # Usage
 
@@ -83,6 +84,8 @@ This will add an `upstash` entry to your MCP config file that points to the loca
   }
 }
 ```
+
+> NOTE: The same issue with node version manager applies here. Please look at the note in the usage section if you are using a node version manager.
 
 You can now use Claude Desktop to run Upstash commands.
 

@@ -1,6 +1,6 @@
 {
   "version": "0.0.0",
-  "name": "@upstash/qstash",
+  "name": "@upstash/mcp-server-upstash",
   "description": "MCP server for Upstash",
   "license": "MIT",
   "type": "module",

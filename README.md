@@ -72,7 +72,7 @@ This will be used for setting the Claude config and running mcp inspector.
 To install the Claude Desktop config for local development, run the following command:
 
 ```bash
-npm run install
+npm run setup
 ```
 
 This will add an `upstash` entry to your MCP config file that points to the local build of the package.

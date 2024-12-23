@@ -1,5 +1,5 @@
 {
-  "version": "0.0.0",
+  "version": "0.0.1",
   "name": "@upstash/mcp-server-upstash",
   "description": "MCP server for Upstash",
   "license": "MIT",
@@ -18,7 +18,7 @@
     "build": "tsup && node -e \"require('fs').chmodSync('dist/index.js', '755')\"",
     "watch": "npm run build && tsup --watch",
     "inspector": "npx @modelcontextprotocol/inspector node --enable-source-maps dist/index.js run",
-    "install": "node ./dist/index.js init",
+    "setup": "node ./dist/index.js init",
     "logs": "tail -n 20 -f ~/Library/Logs/Claude/mcp*.log",
     "test": "bun test",
     "fmt": "prettier --write .",

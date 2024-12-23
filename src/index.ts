@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 /* eslint-disable unicorn/no-process-exit */
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { init } from "./init.js";

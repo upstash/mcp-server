@@ -45,6 +45,7 @@ See the [troubleshooting guide](https://modelcontextprotocol.io/quickstart#troub
 - `redis_database_run_single_redis_command`
 - `redis_database_set_daily_backup`
 - `redis_database_update_regions`
+- `redis_database_get_usage_stats`
 
 ## Development
 

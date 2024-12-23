@@ -17,10 +17,12 @@ const readRegionSchema = z.union([
 const READ_REGIONS_DESCRIPTION =
   "Available regions: us-east-1, us-west-1, us-west-2, eu-west-1, eu-central-1, ap-southeast-1, ap-southeast-2, sa-east-1";
 
+const GENERIC_DATABASE_NOTES = "\nNOTE: Don't show the database ID from the response to the user unless explicitly asked or needed.\n";
+
 export const redisDbOpsTools = {
   redis_database_create_new: tool({
     description: `Create a new Upstash redis database. 
-NOTE: Ask user for the region and name of the database.`,
+NOTE: Ask user for the region and name of the database.${GENERIC_DATABASE_NOTES}`,
     inputSchema: z.object({
       name: z.string().describe("Name of the database."),
       primary_region: readRegionSchema.describe(
@@ -60,7 +62,7 @@ NOTE: Ask user for the region and name of the database.`,
 
   redis_database_list_databases: tool({
     description:
-      "List all Upstash redis databases. Includes names, regions, password, creation time and more.",
+      `List all Upstash redis databases. Includes names, regions, password, creation time and more.${GENERIC_DATABASE_NOTES}`,
     handler: async () => {
       const dbs = await http.get<RedisDatabase[]>("v2/redis/databases");
 
@@ -95,6 +97,7 @@ db_memory_threshold: Maximum memory usage.
 db_daily_bandwidth_limit: Maximum daily network bandwidth usage.
 db_request_limit: Total number of commands allowed.
 All sizes are in bytes
+${GENERIC_DATABASE_NOTES}
       `,
     inputSchema: z.object({
       database_id: z.string().describe("The ID of the database to get details for."),

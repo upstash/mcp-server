@@ -1,6 +1,7 @@
 import { config } from "./config";
 import { log } from "./log";
 import { applyMiddlewares } from "./middlewares";
+import fetch from "node-fetch";
 
 export type UpstashRequest = {
   method: string;
@@ -54,11 +55,13 @@ class HttpClient {
     }
 
     const url = [this.baseUrl, ...req.path].join("/");
+    const token = [config.email, config.apiKey].join(":");
+
     const init: RequestInit = {
       method: req.method,
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Basic ${btoa([config.email, config.apiKey].join(":"))}`,
+        Authorization: `Basic ${Buffer.from(token).toString("base64")}`,
       },
     };
 

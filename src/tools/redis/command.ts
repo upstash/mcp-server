@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { json, tool } from "..";
 import { log } from "../../log";
+import fetch from "node-fetch";
 
 type RedisCommandResult =
   | {

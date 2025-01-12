@@ -34,7 +34,7 @@ export function handlerResponseToCallResult(
     // Truncate messages that are too long
     const truncatedArray = array.map((item) =>
       item.length > MAX_MESSAGE_LENGTH
-        ? `${item.slice(0, MAX_MESSAGE_LENGTH)}... (truncated)`
+        ? `${item.slice(0, MAX_MESSAGE_LENGTH)}... (MESSAGE TRUNCATED, MENTION THIS TO USER)`
         : item
     );
 

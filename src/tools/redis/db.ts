@@ -194,16 +194,6 @@ Includes: read_latency_mean, write_latency_mean, keyspace, throughput (cmds/sec)
       return [json(stats), `NOTE: Use the timestamps_to_date tool to parse timestamps if needed`];
     },
   }),
-
-  timestamps_to_date: tool({
-    description: `Use this tool to convert a timestamp to a human-readable date`,
-    inputSchema: z.object({
-      timestamps: z.array(z.number()).describe("Array of timestamps to convert"),
-    }),
-    handler: async ({ timestamps }) => {
-      return timestamps.map((timestamp) => new Date(timestamp).toUTCString());
-    },
-  }),
 };
 
 const parseUsageData = (data: UsageData) => {

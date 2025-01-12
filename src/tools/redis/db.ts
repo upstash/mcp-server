@@ -137,7 +137,7 @@ ${GENERIC_DATABASE_NOTES}
     },
   }),
 
-  redis_database_get_last_5_days_usage: tool({
+  redis_database_get_usage_last_5_days: tool({
     description: `Get PRECISE command count and bandwidth usage statistics of an Upstash redis database over the last 5 days (calculated according to UTC+0). This is a precise stat, not an average.
 NOTE: Mention that times are in UTC+0 in the response
 NOTE: Ask user first if they want to see stats for each database seperately or just for one`,
@@ -155,7 +155,7 @@ NOTE: Ask user first if they want to see stats for each database seperately or j
     },
   }),
 
-  redis_database_get_usage_stats: tool({
+  redis_database_get_stats: tool({
     description: `Get SAMPLED usage statistics of an Upstash redis database over a period of time (1h, 3h, 12h, 1d, 3d, 7d). Use this to check for peak usages and latency problems.
 Includes: read_latency_mean, write_latency_mean, keyspace, throughput (cmds/sec), diskusage`,
     inputSchema: z.object({

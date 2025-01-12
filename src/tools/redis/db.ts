@@ -77,8 +77,11 @@ NOTE: Ask user for the region and name of the database.${GENERIC_DATABASE_NOTES}
 
       if (dbs.length > 2)
         messages.push(
-          `If the user did not specify a database name for the next command, ask them to choose a database from the list`
+          `NOTE: If the user did not specify a database name for the next command, ask them to choose a database from the list.`
         );
+      messages.push(
+        "NOTE: If the user wants to see dbs in another team, mention that they need to create a new management api key for that team and initialize MCP server with the newly created key."
+      );
 
       return messages;
     },

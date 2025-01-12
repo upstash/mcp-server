@@ -62,16 +62,25 @@ NOTE: Ask user for the region and name of the database.${GENERIC_DATABASE_NOTES}
     handler: async () => {
       const dbs = await http.get<RedisDatabase[]>("v2/redis/databases");
 
-      return json(
-        dbs.map((db) => {
-          const result = {
-            database_id: db.database_id,
-            database_name: db.database_name,
-            state: db.state === "active" ? undefined : db.state,
-          };
-          return pruneFalsy(result);
-        })
-      );
+      const messages = [
+        json(
+          dbs.map((db) => {
+            const result = {
+              database_id: db.database_id,
+              database_name: db.database_name,
+              state: db.state === "active" ? undefined : db.state,
+            };
+            return pruneFalsy(result);
+          })
+        ),
+      ];
+
+      if (dbs.length > 2)
+        messages.push(
+          `If the user did not specify a database name for the next command, ask them to choose a database from the list`
+        );
+
+      return messages;
     },
   }),
 

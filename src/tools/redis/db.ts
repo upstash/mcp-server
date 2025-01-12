@@ -2,6 +2,7 @@ import { z } from "zod";
 import { json, tool } from "..";
 import { http } from "../../http";
 import type { RedisDatabase, RedisUsageResponse, UsageData } from "./types";
+import { pruneFalsy } from "../../utils";
 
 const readRegionSchema = z.union([
   z.literal("us-east-1"),
@@ -14,10 +15,8 @@ const readRegionSchema = z.union([
   z.literal("sa-east-1"),
 ]);
 
-const READ_REGIONS_DESCRIPTION =
-  "Available regions: us-east-1, us-west-1, us-west-2, eu-west-1, eu-central-1, ap-southeast-1, ap-southeast-2, sa-east-1";
-
-const GENERIC_DATABASE_NOTES = "\nNOTE: Don't show the database ID from the response to the user unless explicitly asked or needed.\n";
+const GENERIC_DATABASE_NOTES =
+  "\nNOTE: Don't show the database ID from the response to the user unless explicitly asked or needed.\n";
 
 export const redisDbOpsTools = {
   redis_database_create_new: tool({
@@ -25,13 +24,11 @@ export const redisDbOpsTools = {
 NOTE: Ask user for the region and name of the database.${GENERIC_DATABASE_NOTES}`,
     inputSchema: z.object({
       name: z.string().describe("Name of the database."),
-      primary_region: readRegionSchema.describe(
-        `Primary Region of the Global Database. ${READ_REGIONS_DESCRIPTION}`
-      ),
+      primary_region: readRegionSchema.describe(`Primary Region of the Global Database.`),
       read_regions: z
         .array(readRegionSchema)
         .optional()
-        .describe(`Array of Read Regions of the Database. ${READ_REGIONS_DESCRIPTION}`),
+        .describe(`Array of read regions of the db`),
     }),
     handler: async ({ name, primary_region, read_regions }) => {
       const newDb = await http.post<RedisDatabase>("v2/redis/database", {
@@ -61,31 +58,19 @@ NOTE: Ask user for the region and name of the database.${GENERIC_DATABASE_NOTES}
   }),
 
   redis_database_list_databases: tool({
-    description:
-      `List all Upstash redis databases. Includes names, regions, password, creation time and more.${GENERIC_DATABASE_NOTES}`,
+    description: `List all Upstash redis databases. Only their names and ids.${GENERIC_DATABASE_NOTES}`,
     handler: async () => {
       const dbs = await http.get<RedisDatabase[]>("v2/redis/databases");
 
       return json(
-        // Only the important fields
-        dbs.map((db) => ({
-          database_id: db.database_id,
-          database_name: db.database_name,
-          database_type: db.database_type,
-          region: db.region,
-          type: db.type,
-          primary_region: db.primary_region,
-          read_regions: db.read_regions,
-          creation_time: db.creation_time,
-          budget: db.budget,
-          state: db.state,
-          password: db.password,
-          endpoint: db.endpoint,
-          rest_token: db.rest_token,
-          read_only_rest_token: db.read_only_rest_token,
-          db_acl_enabled: db.db_acl_enabled,
-          db_acl_default_user_status: db.db_acl_default_user_status,
-        }))
+        dbs.map((db) => {
+          const result = {
+            database_id: db.database_id,
+            database_name: db.database_name,
+            state: db.state === "active" ? undefined : db.state,
+          };
+          return pruneFalsy(result);
+        })
       );
     },
   }),
@@ -140,9 +125,27 @@ ${GENERIC_DATABASE_NOTES}
     },
   }),
 
+  redis_database_get_last_5_days_usage: tool({
+    description: `Get PRECISE command count and bandwidth usage statistics of an Upstash redis database over the last 5 days (calculated according to UTC+0). This is a precise stat, not an average.
+NOTE: Mention that times are in UTC+0 in the response
+NOTE: Ask user first if they want to see stats for each database seperately or just for one`,
+    inputSchema: z.object({
+      id: z.string().describe("The ID of your database."),
+    }),
+    handler: async ({ id }) => {
+      const stats = await http.get<RedisUsageResponse>(["v2/redis/stats", `${id}?period=3h`]);
+
+      return json({
+        days: stats.days,
+        command_usage: stats.dailyrequests,
+        bandwidth_usage: stats.bandwidths,
+      });
+    },
+  }),
+
   redis_database_get_usage_stats: tool({
-    description: `Get usage statistics of an Upstash redis database over a period of time.
-Available stats: read_latency_mean, write_latency_mean, keyspace, throughput (cmds per second), daily_net_commands, diskusage, command_counts (stats of every command seperately).`,
+    description: `Get SAMPLED usage statistics of an Upstash redis database over a period of time. Use this to check for peak usages and latency problems.
+Includes: read_latency_mean, write_latency_mean, keyspace, throughput (cmds/sec), diskusage`,
     inputSchema: z.object({
       id: z.string().describe("The ID of your database."),
       period: z
@@ -159,11 +162,11 @@ Available stats: read_latency_mean, write_latency_mean, keyspace, throughput (cm
         .union([
           z.literal("read_latency_mean"),
           z.literal("write_latency_mean"),
-          z.literal("keyspace"),
-          z.literal("throughput"),
-          z.literal("daily_net_commands"),
-          z.literal("diskusage"),
-          z.literal("command_counts"),
+          z.literal("keyspace").describe("Number of keys in db"),
+          z
+            .literal("throughput")
+            .describe("commands per second (sampled), calculate area for estimated count"),
+          z.literal("diskusage").describe("Current disk usage in bytes"),
         ])
         .describe("The type of stat to get"),
     }),
@@ -172,15 +175,6 @@ Available stats: read_latency_mean, write_latency_mean, keyspace, throughput (cm
         "v2/redis/stats",
         `${id}?period=${period}`,
       ]);
-
-      if (type === "command_counts") {
-        return JSON.stringify(
-          stats.command_counts.map((c) => ({
-            command: c.metric_identifier,
-            ...parseUsageData(c.data_points),
-          }))
-        );
-      }
 
       const stat = stats[type];
 
@@ -194,6 +188,9 @@ Available stats: read_latency_mean, write_latency_mean, keyspace, throughput (cm
 };
 
 const parseUsageData = (data: UsageData) => {
+  if (!data) return "NO DATA";
+  if (!Array.isArray(data)) return "INVALID DATA";
+  if (data.length === 0 || data.length === 1) return "NO DATA";
   return {
     start: data[0].x,
     // last one can be null, so use the second last

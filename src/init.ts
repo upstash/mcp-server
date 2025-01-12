@@ -4,14 +4,9 @@ import os from "os";
 import fs from "fs";
 import chalk from "chalk";
 
-import { fileURLToPath } from "url";
 import { log } from "./log";
 import { config } from "./config";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const _packageJson = JSON.parse(
-  fs.readFileSync(path.join(__dirname, "..", "package.json"), "utf8")
-);
 const claudeConfigPath = path.join(
   os.homedir(),
   "Library",

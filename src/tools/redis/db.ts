@@ -138,26 +138,29 @@ ${GENERIC_DATABASE_NOTES}
   }),
 
   redis_database_get_usage_last_5_days: tool({
-    description: `Get PRECISE command count and bandwidth usage statistics of an Upstash redis database over the last 5 days (calculated according to UTC+0). This is a precise stat, not an average.
-NOTE: Mention that times are in UTC+0 in the response
-NOTE: Ask user first if they want to see stats for each database seperately or just for one`,
+    description: `Get PRECISE command count and bandwidth usage statistics of an Upstash redis database over the last 5 days. This is a precise stat, not an average.
+NOTE: Ask user first if they want to see stats for each database seperately or just for one.`,
     inputSchema: z.object({
       id: z.string().describe("The ID of your database."),
     }),
     handler: async ({ id }) => {
       const stats = await http.get<RedisUsageResponse>(["v2/redis/stats", `${id}?period=3h`]);
 
-      return json({
-        days: stats.days,
-        command_usage: stats.dailyrequests,
-        bandwidth_usage: stats.bandwidths,
-      });
+      return [
+        json({
+          days: stats.days,
+          command_usage: stats.dailyrequests,
+          bandwidth_usage: stats.bandwidths,
+        }),
+        `NOTE: Times are calculated according to UTC+0`,
+      ];
     },
   }),
 
   redis_database_get_stats: tool({
     description: `Get SAMPLED usage statistics of an Upstash redis database over a period of time (1h, 3h, 12h, 1d, 3d, 7d). Use this to check for peak usages and latency problems.
-Includes: read_latency_mean, write_latency_mean, keyspace, throughput (cmds/sec), diskusage`,
+Includes: read_latency_mean, write_latency_mean, keyspace, throughput (cmds/sec), diskusage
+NOTE: If the user does not specify which stat to get, use throughput as default.`,
     inputSchema: z.object({
       id: z.string().describe("The ID of your database."),
       period: z
@@ -190,11 +193,16 @@ Includes: read_latency_mean, write_latency_mean, keyspace, throughput (cmds/sec)
 
       const stat = stats[type];
 
-      if (Array.isArray(stat)) {
-        return JSON.stringify(parseUsageData(stat));
-      }
+      if (!Array.isArray(stat))
+        throw new Error(
+          `Invalid key provided: ${type}. Valid keys are: ${Object.keys(stats).join(", ")}`
+        );
 
-      return [json(stats), `NOTE: Use the timestamps_to_date tool to parse timestamps if needed`];
+      return [
+        JSON.stringify(parseUsageData(stat)),
+        `NOTE: Use the timestamps_to_date tool to parse timestamps if needed`,
+        `NOTE: Don't try to plot multiple stats in the same chart`,
+      ];
     },
   }),
 };

@@ -191,10 +191,12 @@ const parseUsageData = (data: UsageData) => {
   if (!data) return "NO DATA";
   if (!Array.isArray(data)) return "INVALID DATA";
   if (data.length === 0 || data.length === 1) return "NO DATA";
+  const filteredData = data.filter((d) => d.x && d.y);
   return {
-    start: data[0].x,
+    start: filteredData[0].x,
     // last one can be null, so use the second last
-    end: data.at(-1)?.x || data.at(-2)?.x,
+    // eslint-disable-next-line unicorn/prefer-at
+    end: filteredData[filteredData.length - 1]?.x,
     data: data.map((d) => [new Date(d.x).getTime(), d.y]),
   };
 };

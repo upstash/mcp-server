@@ -15,7 +15,7 @@ export const redisCommandTools = {
   redis_database_run_single_redis_command: tool({
     description: `Run a single Redis command on a specific Upstash redis database.
 NOTE: For discovery, use SCAN over KEYS. Use TYPE to get the type of a key.
-NOTE: SCAN cursor [MATCH pattern] [COUNT count] [TYPE type].`,
+NOTE: SCAN cursor [MATCH pattern] [COUNT count] [TYPE type]`,
     inputSchema: z.object({
       database_rest_url: z
         .string()

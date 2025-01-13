@@ -1,6 +1,7 @@
 import { config } from "./config";
 import { log } from "./log";
 import { applyMiddlewares } from "./middlewares";
+import type { RequestInit } from "node-fetch";
 import fetch from "node-fetch";
 
 export type UpstashRequest = {

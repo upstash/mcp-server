@@ -1,13 +1,12 @@
 #!/usr/bin/env node
 
-/* eslint-disable unicorn/no-process-exit */
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { init } from "./init.js";
-import { log } from "./log.js";
-import { server } from "./server.js";
-import { config } from "./config.js";
+import { init } from "./init";
+import { log } from "./log";
+import { server } from "./server";
+import { config } from "./config";
 import "dotenv/config";
-import { testConnection } from "./test-connection.js";
+import { testConnection } from "./test-connection";
 
 process.on("uncaughtException", (error) => {
   log("Uncaught exception:", error.name, error.message, error.stack);

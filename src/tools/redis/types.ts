@@ -65,4 +65,9 @@ export type RedisUsageResponse = {
     metric_identifier: string;
     data_points: UsageData;
   }[];
+
+  // For last 5 days
+  dailyrequests: UsageData;
+  bandwidths: UsageData;
+  days: string[];
 };

@@ -1,4 +1,5 @@
 # Upstash MCP Server
+
 [![smithery badge](https://smithery.ai/badge/@upstash/mcp-server-upstash)](https://smithery.ai/server/@upstash/mcp-server-upstash)
 
 Model Context Protocol (MCP) is a [new, standardized protocol](https://modelcontextprotocol.io/introduction) for managing context between large language models (LLMs) and external systems. In this repository, we provide an installer as well as an MCP Server for [Upstash Developer API's](https://upstash.com/docs/devops/developer-api).
@@ -20,6 +21,7 @@ This lets you use Claude Desktop, or any MCP Client, to use natural language to 
 - [Upstash API key](https://upstash.com/docs/devops/developer-api) - You can create one from [here](https://console.upstash.com/account/api).
 
 ## How to use locally
+
 ### Installing via Smithery
 
 To install Upstash for Claude Desktop automatically via [Smithery](https://smithery.ai/server/@upstash/mcp-server-upstash):
@@ -29,6 +31,7 @@ npx -y @smithery/cli install @upstash/mcp-server-upstash --client claude
 ```
 
 ### Installing manually
+
 1. Run `npx @upstash/mcp-server-upstash init <UPSTASH_EMAIL> <UPSTASH_API_KEY>`
 2. Restart Claude Desktop
 3. You should now be able to use Upstash commands in Claude Desktop
@@ -54,7 +57,8 @@ See the [troubleshooting guide](https://modelcontextprotocol.io/quickstart#troub
 - `redis_database_run_single_redis_command`
 - `redis_database_set_daily_backup`
 - `redis_database_update_regions`
-- `redis_database_get_usage_stats`
+- `redis_database_get_usage_last_5_days`
+- `redis_database_get_stats`
 
 ## Development
 

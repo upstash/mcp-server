@@ -44,7 +44,14 @@ NOTE: SCAN cursor [MATCH pattern] [COUNT count] [TYPE type]`,
         throw new Error("Redis error: " + result.error);
       }
 
-      return json(result);
+      const isScanCommand = command[0].toLocaleLowerCase().includes("scan");
+      const messages = [json(result)];
+
+      if (isScanCommand)
+        messages.push(`NOTE: Use the returned cursor to get the next set of keys.
+NOTE: The result might be too large to be returned. If applicable, stop after the second SCAN command and ask the user if they want to continue.`);
+
+      return messages;
     },
   }),
 

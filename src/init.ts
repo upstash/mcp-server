@@ -1,15 +1,12 @@
-import path from "node:path";
-import os from "node:os";
-import fs from "node:fs";
+/* eslint-disable unicorn/prefer-node-protocol */
+import path from "path";
+import os from "os";
+import fs from "fs";
 import chalk from "chalk";
-import { fileURLToPath } from "node:url";
+
 import { log } from "./log";
 import { config } from "./config";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const _packageJson = JSON.parse(
-  fs.readFileSync(path.join(__dirname, "..", "package.json"), "utf8")
-);
 const claudeConfigPath = path.join(
   os.homedir(),
   "Library",

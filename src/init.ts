@@ -26,7 +26,7 @@ export async function init({ executablePath }: { executablePath: string }) {
       }
     : {
         command: "npx",
-        args: ["-y", "@upstash/mcp-server-upstash", "run", config.email, config.apiKey],
+        args: ["-y", "@upstash/mcp-server", "run", config.email, config.apiKey],
       };
 
   const configDir = path.dirname(claudeConfigPath);

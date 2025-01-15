@@ -20,9 +20,9 @@ process.on("unhandledRejection", (error) => {
 const envApiKey = process.env.UPSTASH_API_KEY;
 const envEmail = process.env.UPSTASH_EMAIL;
 
-const USAGE_GENERAL = `Usage: npx @upstash/mcp-server-upstash (init|run) <UPSTASH_EMAIL> <UPSTASH_API_KEY>`;
-const USAGE_RUN = `Usage: npx @upstash/mcp-server-upstash run <UPSTASH_EMAIL> <UPSTASH_API_KEY>`;
-const USAGE_INIT = `Usage: npx @upstash/mcp-server-upstash init <UPSTASH_EMAIL> <UPSTASH_API_KEY>`;
+const USAGE_GENERAL = `Usage: npx @upstash/mcp-server (init|run) <UPSTASH_EMAIL> <UPSTASH_API_KEY>`;
+const USAGE_RUN = `Usage: npx @upstash/mcp-server run <UPSTASH_EMAIL> <UPSTASH_API_KEY>`;
+const USAGE_INIT = `Usage: npx @upstash/mcp-server init <UPSTASH_EMAIL> <UPSTASH_API_KEY>`;
 
 function parseArguments() {
   const [cmd, ...args] = process.argv.slice(2);

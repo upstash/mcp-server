@@ -1,18 +1,18 @@
 {
-  "version": "0.0.3",
-  "name": "@upstash/mcp-server-upstash",
+  "version": "0.0.0",
+  "name": "@upstash/mcp-server",
   "description": "MCP server for Upstash",
   "license": "MIT",
   "type": "module",
   "bin": {
-    "mcp-server-upstash": "./dist/index.js"
+    "mcp-server": "./dist/index.js"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/upstash/mcp-server-upstash.git"
+    "url": "git+https://github.com/upstash/mcp-server.git"
   },
   "bugs": {
-    "url": "https://github.com/upstash/mcp-server-upstash/issues"
+    "url": "https://github.com/upstash/mcp-server/issues"
   },
   "scripts": {
     "build": "tsup && node -e \"require('fs').chmodSync('dist/index.js', '755')\"",

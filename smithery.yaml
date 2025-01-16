@@ -6,15 +6,14 @@ startCommand:
       "properties": {
         "email": {
           "type": "string",
-          "format": "email",
-          "description": "Your upstash mail address."
+          "description": "Your Upstash email address"
         },
         "token": {
           "type": "string",
-          "description": "Management API token. You can create one from the console."
+          "description": "Your Upstash management API key"
         }
       },
-      "required": ["email", "api_token"],
+      "required": ["email", "token"],
       "additionalProperties": false
     }
   commandFunction:

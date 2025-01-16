@@ -1,0 +1,31 @@
+startCommand:
+  type: stdio
+  configSchema:
+    {
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "Your upstash mail address."
+        },
+        "token": {
+          "type": "string",
+          "description": "Management API token. You can create one from the console."
+        }
+      },
+      "required": ["email", "api_token"],
+      "additionalProperties": false
+    }
+  commandFunction:
+    |-
+    (config) => ({
+      "command": "npx",
+      "args": [
+        "-y",
+        "@upstash/mcp-server",
+        "run",
+        config.email,
+        config.token
+      ]
+    })

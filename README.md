@@ -22,15 +22,7 @@ This lets you use Claude Desktop, or any MCP Client, to use natural language to 
 
 ## How to use locally
 
-### Installing via Smithery
-
-To install Upstash for Claude Desktop automatically via [Smithery](https://smithery.ai/server/@upstash/mcp-server):
-
-```bash
-npx -y @smithery/cli install @upstash/mcp-server --client claude
-```
-
-### Installing manually
+### Installing via npx
 
 1. Run `npx @upstash/mcp-server init <UPSTASH_EMAIL> <UPSTASH_API_KEY>`
 2. Restart Claude Desktop
@@ -39,6 +31,15 @@ npx -y @smithery/cli install @upstash/mcp-server --client claude
 See the [troubleshooting guide](https://modelcontextprotocol.io/quickstart#troubleshooting) in the MCP documentation. You can also reach out to us at [Discord](https://discord.com/invite/w9SenAtbme).
 
 > NOTE: If you are using a node version manager like nvm or fnm, please check [this issue](https://github.com/modelcontextprotocol/servers/issues/64#issuecomment-2530337743). You should change the `node` command in the MCP config to the absolute path of the node binary.
+
+### Installing via Smithery
+
+To install Upstash for Claude Desktop automatically via [Smithery](https://smithery.ai/server/@upstash/mcp-server):
+
+```bash
+npx -y @smithery/cli install @upstash/mcp-server --client claude
+```
+
 
 ## Tools
 

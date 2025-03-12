@@ -22,9 +22,16 @@ This lets you use Claude Desktop, or any MCP Client, to use natural language to 
 
 ## How to use locally
 
+### Installing for Cursor
+
+Add this command to the mcp list in cursor. For more info, check the [Cursor MCP](https://docs.cursor.com/context/model-context-protocol) docs.
+```
+npx -y @upstash/mcp-server run <UPSTASH_EMAIL> <UPSTASH_API_KEY>
+```
+
 ### Installing via npx
 
-1. Run `npx @upstash/mcp-server init <UPSTASH_EMAIL> <UPSTASH_API_KEY>`
+1. Run `npx @upstash/mcp-server init <UPSTASH_EMAIL> <UPSTASH_API_KEY>`. This installs the mcp server for claude.
 2. Restart Claude Desktop
 3. You should now be able to use Upstash commands in Claude Desktop
 

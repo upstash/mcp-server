@@ -4,6 +4,10 @@
 
 Model Context Protocol (MCP) is a [new, standardized protocol](https://modelcontextprotocol.io/introduction) for managing context between large language models (LLMs) and external systems. In this repository, we provide an installer as well as an MCP Server for [Upstash Developer API's](https://upstash.com/docs/devops/developer-api).
 
+<a href="https://glama.ai/mcp/servers/4slca1893i">
+  <img width="380" height="200" src="https://glama.ai/mcp/servers/4slca1893i/badge" alt="Upstash Server MCP server" />
+</a>
+
 This lets you use Claude Desktop, or any MCP Client, to use natural language to accomplish things on your Upstash account, e.g.:
 
 - "Create a new Redis database in us-east-1"

@@ -24,7 +24,7 @@ const USAGE_GENERAL = `Usage: npx @upstash/mcp-server (init|run) <UPSTASH_EMAIL>
 const USAGE_RUN = `Usage: npx @upstash/mcp-server run <UPSTASH_EMAIL> <UPSTASH_API_KEY>`;
 const USAGE_INIT = `Usage: npx @upstash/mcp-server init <UPSTASH_EMAIL> <UPSTASH_API_KEY>`;
 
-function parseArguments() {
+async function parseArguments() {
   const [cmd, ...args] = process.argv.slice(2);
   if (!cmd) throw new Error(USAGE_GENERAL);
   else if (cmd === "init") {
@@ -39,9 +39,9 @@ function parseArguments() {
     config.apiKey = finalApiKey;
     config.email = finalEmail;
 
-    testConnection();
+    await testConnection();
 
-    init({
+    await init({
       executablePath: process.argv[1],
     });
   } else if (cmd === "run") {
@@ -57,13 +57,10 @@ function parseArguments() {
     config.apiKey = finalApiKey;
     config.email = finalEmail;
 
-    testConnection();
+    await testConnection();
 
     // Start the server
-    main().catch((error) => {
-      console.error("Server error:", error);
-      process.exit(1);
-    });
+    await main();
   } else {
     throw new Error(`Unknown command: ${cmd}. Expected 'init' or 'run'. ${USAGE_GENERAL}`);
   }
@@ -74,10 +71,9 @@ async function main() {
   await server.connect(transport);
 }
 
-try {
-  parseArguments();
-} catch (error) {
+// eslint-disable-next-line unicorn/prefer-top-level-await
+parseArguments().catch((error) => {
   if (!(error instanceof Error)) throw error;
   console.error(error.message);
   process.exit(1);
-}
+});

@@ -73,7 +73,7 @@ npx -y @smithery/cli install @upstash/mcp-server --client claude
 Clone the project and run:
 
 ```bash
-bun install
+pnpm install
 npm run watch
 ```
 

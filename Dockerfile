@@ -1,0 +1,41 @@
+FROM node:20-alpine AS builder
+
+RUN npm install -g pnpm
+
+WORKDIR /app
+
+# Install deps
+COPY package.json ./
+COPY pnpm-lock.yaml ./
+
+RUN pnpm install
+
+# Copy rest
+COPY . .
+
+RUN pnpm run build
+
+FROM node:20-alpine AS release
+
+RUN npm install -g pnpm
+
+WORKDIR /app
+
+# Copy only the necessary files from the builder
+COPY --from=builder /app/dist /app/dist
+COPY --from=builder /app/package.json /app/package.json
+COPY --from=builder /app/pnpm-lock.yaml /app/pnpm-lock.yaml
+
+# Install only production dependencies
+RUN pnpm install --prod
+
+# Set environment variables for Upstash
+ENV UPSTASH_EMAIL=""
+ENV UPSTASH_API_KEY=""
+
+# Expose the necessary ports (if any specific ports are required)
+EXPOSE 3000
+
+# Command to run the MCP server
+ENTRYPOINT sh -c '[ -z "$UPSTASH_EMAIL" ] || [ -z "$UPSTASH_API_KEY" ] && { echo "Error: Missing required environment variables"; exit 1; } || node dist/index.js run "$UPSTASH_EMAIL" "$UPSTASH_API_KEY"'
+

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "bun:test";
+import { describe, expect, it } from "vitest";
 import type { CustomTool } from "./tool";
 import { convertToTools } from "./tool";
 import { z } from "zod";

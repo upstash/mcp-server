@@ -21,31 +21,59 @@ This allows you to use any MCP Client to interact with your Upstash account usin
 
 ## How to use locally
 
-### Installing via Smithery
+### Installing for Claude Desktop
 
-To install Upstash for Claude Desktop automatically via [Smithery](https://smithery.ai/server/@upstash/mcp-server):
+To install Upstash MCP Server for Claude Desktop automatically via [Smithery](https://smithery.ai/server/@upstash/mcp-server) run the following command:
 
 ```bash
-npx -y @smithery/cli install @upstash/mcp-server --client claude
+npx -y @smithery/cli@latest install @upstash/mcp-server --client claude
 ```
+
+<details>
+  <summary>Install without Smithery</summary>
+  
+  ```bash
+  npx @upstash/mcp-server init <UPSTASH_EMAIL> <UPSTASH_API_KEY>
+  ```
+
+  This will edit your MCP config file and add an entry for Upstash.
+</details>
 
 ### Installing for Cursor
 
-Add this command to the mcp list in cursor. For more info, check the [Cursor MCP](https://docs.cursor.com/context/model-context-protocol) docs.
+To install Upstash MCP Server for Cursor automatically via [Smithery](https://smithery.ai/server/@upstash/mcp-server) run the following command:
 
-```
-npx -y @upstash/mcp-server run <UPSTASH_EMAIL> <UPSTASH_API_KEY>
-```
-
-### Installing for Claude Desktop
-
-To install Upstash for Claude Desktop without using smitherly cli, run the following command:
-
-```
-npx @upstash/mcp-server init <UPSTASH_EMAIL> <UPSTASH_API_KEY>
+```bash
+npx -y @smithery/cli@latest install @upstash/mcp-server --client cursor
 ```
 
-This will edit your MCP config file and add an entry for Upstash.
+<details>
+  <summary>Install without Smithery</summary>
+  
+  Add the following command to the MCP config in Cursor. For more info, check the [Cursor MCP docs](https://docs.cursor.com/context/model-context-protocol#configuring-mcp-servers).
+
+  ```bash
+  npx -y @upstash/mcp-server run <UPSTASH_EMAIL> <UPSTASH_API_KEY>
+  ```
+</details>
+
+### Installing for Windsurf
+
+To install Upstash MCP Server for Windsurf automatically via [Smithery](https://smithery.ai/server/@upstash/mcp-server) run the following command:
+
+```bash
+npx -y @smithery/cli@latest install @upstash/mcp-server --client windsurf
+```
+
+<details>
+  <summary>Install without Smithery</summary>
+  
+  Add the following command to the MCP config in Windsurf. For more info, check out the [Windsurf MCP docs](https://docs.windsurf.com/windsurf/mcp#mcp-config-json).
+
+  ```bash
+  npx -y @upstash/mcp-server run <UPSTASH_EMAIL> <UPSTASH_API_KEY>
+  ```
+</details>
 
 ### Running with Docker
 

@@ -36,7 +36,8 @@ npx -y @smithery/cli@latest install @upstash/mcp-server --client claude
   npx @upstash/mcp-server init <UPSTASH_EMAIL> <UPSTASH_API_KEY>
   ```
 
-  This will edit your MCP config file and add an entry for Upstash.
+This will edit your MCP config file and add an entry for Upstash.
+
 </details>
 
 ### Installing for Cursor
@@ -52,9 +53,10 @@ npx -y @smithery/cli@latest install @upstash/mcp-server --client cursor
   
   Add the following command to the MCP config in Cursor. For more info, check the [Cursor MCP docs](https://docs.cursor.com/context/model-context-protocol#configuring-mcp-servers).
 
-  ```bash
-  npx -y @upstash/mcp-server run <UPSTASH_EMAIL> <UPSTASH_API_KEY>
-  ```
+```bash
+npx -y @upstash/mcp-server run <UPSTASH_EMAIL> <UPSTASH_API_KEY>
+```
+
 </details>
 
 ### Installing for Windsurf
@@ -70,9 +72,10 @@ npx -y @smithery/cli@latest install @upstash/mcp-server --client windsurf
   
   Add the following command to the MCP config in Windsurf. For more info, check out the [Windsurf MCP docs](https://docs.windsurf.com/windsurf/mcp#mcp-config-json).
 
-  ```bash
-  npx -y @upstash/mcp-server run <UPSTASH_EMAIL> <UPSTASH_API_KEY>
-  ```
+```bash
+npx -y @upstash/mcp-server run <UPSTASH_EMAIL> <UPSTASH_API_KEY>
+```
+
 </details>
 
 ### Running with Docker
@@ -82,6 +85,7 @@ You can also use the provided Docker image to run the server.
 ```bash
 docker build -t upstash-mcp .
 
+# Run the stdio server, add this command to you MCP config
 docker run --rm -i \
   -e UPSTASH_EMAIL=<UPSTASH_EMAIL> \
   -e UPSTASH_API_KEY=<UPSTASH_API_KEY> \
@@ -90,9 +94,19 @@ docker run --rm -i \
 
 ### Troubleshooting
 
-See the [troubleshooting guide](https://modelcontextprotocol.io/quickstart#troubleshooting) in the MCP documentation. You can also reach out to us at [Discord](https://discord.com/invite/w9SenAtbme).
+#### Common Issues
 
-> NOTE: If you are using a node version manager like nvm or fnm, please check [this issue](https://github.com/modelcontextprotocol/servers/issues/64#issuecomment-2530337743). You should change the `node` command in the MCP config to the absolute path of the node binary.
+Your mcp client might have trouble finding the right binaries because of the differences between your shell and system `PATH`.
+
+To fix this, you can get the full path of the binaries by running `which npx` or `which docker` in your shell, and replace the `npx` or `docker` command in the MCP config with the full binary path.
+
+#### Node Version Manager
+
+If you are using a node version manager like nvm or fnm, please check [this issue](https://github.com/modelcontextprotocol/servers/issues/64#issuecomment-2530337743). You should change the `node` command in the MCP config to the absolute path of the node binary.
+
+#### Additional Troubleshooting
+
+See the [troubleshooting guide](https://modelcontextprotocol.io/quickstart#troubleshooting) in the MCP documentation. You can also reach out to us at [Discord](https://discord.com/invite/w9SenAtbme).
 
 ## Tools
 
@@ -120,7 +134,7 @@ Clone the project and run:
 
 ```bash
 pnpm install
-npm run watch
+pnpm run watch
 ```
 
 This will continuously build the project and watch for changes.
@@ -139,7 +153,7 @@ This will be used for setting the Claude config and running mcp inspector.
 To install the Claude Desktop config for local development, run the following command:
 
 ```bash
-npm run setup
+pnpm run setup
 ```
 
 This will add an `upstash` entry to your MCP config file that points to the local build of the package.

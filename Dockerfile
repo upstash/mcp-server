@@ -36,6 +36,8 @@ ENV UPSTASH_API_KEY=""
 # Expose the necessary ports (if any specific ports are required)
 EXPOSE 3000
 
-# Command to run the MCP server
-ENTRYPOINT sh -c '[ -z "$UPSTASH_EMAIL" ] || [ -z "$UPSTASH_API_KEY" ] && { echo "Error: Missing required environment variables"; exit 1; } || node dist/index.js run "$UPSTASH_EMAIL" "$UPSTASH_API_KEY"'
-
+ENTRYPOINT sh -c 'if [ -z "$UPSTASH_EMAIL" ] || [ -z "$UPSTASH_API_KEY" ]; \
+    then echo "Error: Missing required environment variables UPSTASH_EMAIL and UPSTASH_API_KEY"; \
+    exit 1; \
+    fi; \
+    exec node dist/index.js run "$UPSTASH_EMAIL" "$UPSTASH_API_KEY"'

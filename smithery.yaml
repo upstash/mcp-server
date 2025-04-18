@@ -19,10 +19,9 @@ startCommand:
   commandFunction:
     |-
     (config) => ({
-      "command": "npx",
+      "command": "node",
       "args": [
-        "-y",
-        "@upstash/mcp-server",
+        "dist/index.js",
         "run",
         config.email,
         config.token

@@ -7,6 +7,12 @@
   "bin": {
     "mcp-server": "./dist/index.js"
   },
+  "exports": {
+    ".": {
+      "import": "./dist/server.js",
+      "types": "./dist/server.d.ts"
+    }
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/upstash/mcp-server.git"

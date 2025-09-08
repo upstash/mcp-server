@@ -31,5 +31,21 @@ jobs:
       - name: Set package version
         run: echo $(jq --arg v "${{ env.VERSION }}" '(.version) = $v' package.json) > package.json
 
-      - name: Build and Generate MCPB Bundle
-        run: pnpm run pack-mcpb
+      - name: Install Dependencies
+        run: pnpm install
+
+      - name: Build
+        run: pnpm run build
+
+      - name: Set NPM_TOKEN
+        run: npm set "//registry.npmjs.org/:_authToken" ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish
+        if: "!github.event.release.prerelease"
+        run: |
+          npm publish --access public
+
+      - name: Publish release candidate
+        if: "github.event.release.prerelease"
+        run: |
+          npm publish --access public --tag=canary

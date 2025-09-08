@@ -19,6 +19,7 @@ This allows you to use any MCP Client to interact with your Upstash account usin
 ## Quick Setup
 
 First, get your Upstash credentials:
+
 - **Email**: Your Upstash account email
 - **API Key**: Get it from [Upstash Console → Account → API Keys](https://console.upstash.com/account/api)
 
@@ -29,7 +30,14 @@ Add this to your MCP client configuration:
   "mcpServers": {
     "upstash": {
       "command": "npx",
-      "args": ["-y", "@upstash/mcp-server@latest", "--email", "YOUR_EMAIL", "--api-key", "YOUR_API_KEY"]
+      "args": [
+        "-y",
+        "@upstash/mcp-server@latest",
+        "--email",
+        "YOUR_EMAIL",
+        "--api-key",
+        "YOUR_API_KEY"
+      ]
     }
   }
 }
@@ -42,7 +50,18 @@ Add this to your MCP client configuration:
   "mcpServers": {
     "upstash": {
       "command": "npx",
-      "args": ["-y", "@upstash/mcp-server@latest", "--transport", "http", "--port", "3000", "--email", "YOUR_EMAIL", "--api-key", "YOUR_API_KEY"]
+      "args": [
+        "-y",
+        "@upstash/mcp-server@latest",
+        "--transport",
+        "http",
+        "--port",
+        "3000",
+        "--email",
+        "YOUR_EMAIL",
+        "--api-key",
+        "YOUR_API_KEY"
+      ]
     }
   }
 }
@@ -91,7 +110,16 @@ The server will be available at `http://localhost:3000/mcp` with SSE endpoint at
      "mcpServers": {
        "upstash": {
          "command": "docker",
-         "args": ["run", "-i", "--rm", "-e", "UPSTASH_EMAIL=YOUR_EMAIL", "-e", "UPSTASH_API_KEY=YOUR_API_KEY", "upstash-mcp"]
+         "args": [
+           "run",
+           "-i",
+           "--rm",
+           "-e",
+           "UPSTASH_EMAIL=YOUR_EMAIL",
+           "-e",
+           "UPSTASH_API_KEY=YOUR_API_KEY",
+           "upstash-mcp"
+         ]
        }
      }
    }
@@ -168,11 +196,18 @@ To install the Claude Desktop config for local development, add the following to
 
 ```json
 {
-  "mcpServers": { 
+  "mcpServers": {
     "upstash": {
       "command": "node",
-        "args": ["<path-to-repo>/dist/index.js", "run", "--email", "<UPSTASH_EMAIL>", "--api-key", "<UPSTASH_API_KEY>"]
-      }
+      "args": [
+        "<path-to-repo>/dist/index.js",
+        "run",
+        "--email",
+        "<UPSTASH_EMAIL>",
+        "--api-key",
+        "<UPSTASH_API_KEY>"
+      ]
+    }
   }
 }
 ```
@@ -186,5 +221,3 @@ To view the logs from the MCP Server in real time, run the following command:
 ```bash
 pnpm run logs
 ```
-
-

@@ -18,16 +18,34 @@ const program = new Command()
   .option("--email <email>", "Upstash email")
   .option("--api-key <key>", "Upstash API key")
   .option("--debug", "Enable debug mode")
-  .allowUnknownOption() // let other wrappers pass through extra flags
-  .parse(process.argv);
+  .allowUnknownOption(); // let other wrappers pass through extra flags
 
-const cliOptions = program.opts<{
-  transport: string;
-  port: string;
-  email?: string;
-  apiKey?: string;
-  debug?: boolean;
-}>();
+// Add hidden 'run' command for backwards compatibility: npx @upstash/mcp-server run <email> <api-key>
+program
+  .command("run <email> <api-key>", { hidden: true })
+  .action((email: string, apiKey: string) => {
+    (program as any)._legacyArgs = { email, apiKey };
+  });
+
+program.parse(process.argv);
+
+// @ts-expect-error - legacy args
+const isLegacy = Boolean(program._legacyArgs);
+const cliOptions = isLegacy
+  ? {
+      transport: "stdio",
+      port: "3000",
+      email: (program as any)._legacyArgs.email,
+      apiKey: (program as any)._legacyArgs.apiKey,
+      debug: false,
+    }
+  : program.opts<{
+      transport: string;
+      port: string;
+      email?: string;
+      apiKey?: string;
+      debug?: boolean;
+    }>();
 
 export const DEBUG = cliOptions.debug ?? false;
 

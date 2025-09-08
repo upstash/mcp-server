@@ -31,11 +31,15 @@ jobs:
       - name: Set package version
         run: echo $(jq --arg v "${{ env.VERSION }}" '(.version) = $v' package.json) > package.json
 
-      - name: Install Dependencies
-        run: pnpm install
+      - name: Build and Generate MCPB Bundle
+        run: pnpm run pack-mcpb
 
-      - name: Build
-        run: pnpm run build
+      - name: Upload MCPB Bundle to Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: mcpb/upstash-mcp.mcpb
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set NPM_TOKEN
         run: npm set "//registry.npmjs.org/:_authToken" ${{ secrets.NPM_TOKEN }}

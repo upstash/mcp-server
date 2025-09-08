@@ -17,12 +17,12 @@
   "scripts": {
     "build": "tsup && node -e \"require('fs').chmodSync('dist/index.js', '755')\"",
     "watch": "npm run build && tsup --watch",
-    "inspector": "npx @modelcontextprotocol/inspector node --enable-source-maps dist/index.js run",
-    "setup": "node ./dist/index.js init",
     "logs": "tail -n 20 -f ~/Library/Logs/Claude/mcp*.log",
     "fmt": "prettier --write .",
     "test": "vitest",
-    "lint": "eslint \"**/*.{js,ts,tsx}\" --quiet --fix"
+    "lint": "eslint \"**/*.{js,ts,tsx}\" --quiet --fix && tsc --noEmit",
+    "generate-manifest": "tsx scripts/generate-mcpb-manifest.ts",
+    "pack-mcpb": "pnpm install && pnpm run build && rm -rf node_modules && pnpm install --production && pnpm run generate-manifest && mv mcpb/.mcpbignore .mcpbignore && mv mcpb/manifest.json manifest.json && rm -f mcpb/upstash-mcp.mcpb && tar -czf mcpb/upstash-mcp.mcpb --exclude-from=.mcpbignore --exclude=mcpb/upstash-mcp.mcpb . && mv manifest.json mcpb/manifest.json && mv .mcpbignore mcpb/.mcpbignore && pnpm install"
   },
   "files": [
     "dist"
@@ -32,17 +32,19 @@
     "@typescript-eslint/parser": "8.4.0",
     "eslint": "9.10.0",
     "eslint-plugin-unicorn": "55.0.0",
-    "prettier": "^3.4.2",
-    "tsup": "^8.3.5",
-    "vitest": "^3.1.1"
+    "prettier": "^3.6.2",
+    "tsup": "^8.5.0",
+    "vitest": "^3.2.4"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.8.0",
-    "@types/node": "15",
-    "chalk": "^5.3.0",
-    "dotenv": "^16.4.7",
+    "@modelcontextprotocol/sdk": "^1.17.5",
+    "@types/node": "^15.14.9",
+    "chalk": "^5.6.0",
+    "commander": "^14.0.0",
+    "dotenv": "^16.6.1",
     "node-fetch": "^3.3.2",
-    "zod": "^3.24.1",
-    "zod-to-json-schema": "^3.24.1"
+    "tsx": "^4.20.5",
+    "zod": "^3.25.76",
+    "zod-to-json-schema": "^3.24.6"
   }
 }

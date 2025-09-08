@@ -137,30 +137,14 @@ ${GENERIC_DATABASE_NOTES}
     },
   }),
 
-  redis_database_get_usage_last_5_days: tool({
-    description: `Get PRECISE command count and bandwidth usage statistics of an Upstash redis database over the last 5 days. This is a precise stat, not an average.
-NOTE: Ask user first if they want to see stats for each database seperately or just for one.`,
-    inputSchema: z.object({
-      id: z.string().describe("The ID of your database."),
-    }),
-    handler: async ({ id }) => {
-      const stats = await http.get<RedisUsageResponse>(["v2/redis/stats", `${id}?period=3h`]);
+  redis_database_get_statistics: tool({
+    description: `Get comprehensive usage statistics of an Upstash redis database. Returns both:
+1. PRECISE 5-day usage: Exact command count and bandwidth usage over the last 5 days
+2. SAMPLED period stats: Sampled statistics over a specified period (1h, 3h, 12h, 1d, 3d, 7d) for performance monitoring
 
-      return [
-        json({
-          days: stats.days,
-          command_usage: stats.dailyrequests,
-          bandwidth_usage: stats.bandwidths,
-        }),
-        `NOTE: Times are calculated according to UTC+0`,
-      ];
-    },
-  }),
-
-  redis_database_get_stats: tool({
-    description: `Get SAMPLED usage statistics of an Upstash redis database over a period of time (1h, 3h, 12h, 1d, 3d, 7d). Use this to check for peak usages and latency problems.
-Includes: read_latency_mean, write_latency_mean, keyspace, throughput (cmds/sec), diskusage
-NOTE: If the user does not specify which stat to get, use throughput as default.`,
+For sampled stats, includes: read_latency_mean, write_latency_mean, keyspace, throughput (cmds/sec), diskusage
+NOTE: If user doesn't specify stat_type, defaults to "throughput" for sampled stats.
+NOTE: Ask user first if they want to see stats for each database separately or just for one.`,
     inputSchema: z.object({
       id: z.string().describe("The ID of your database."),
       period: z
@@ -172,8 +156,8 @@ NOTE: If the user does not specify which stat to get, use throughput as default.
           z.literal("3d"),
           z.literal("7d"),
         ])
-        .describe("The period of the stats."),
-      type: z
+        .describe("The period for sampled stats."),
+      stat_type: z
         .union([
           z.literal("read_latency_mean"),
           z.literal("write_latency_mean"),
@@ -183,23 +167,40 @@ NOTE: If the user does not specify which stat to get, use throughput as default.
             .describe("commands per second (sampled), calculate area for estimated count"),
           z.literal("diskusage").describe("Current disk usage in bytes"),
         ])
-        .describe("The type of stat to get"),
+        .optional()
+        .describe("The type of sampled stat to get (defaults to 'throughput')"),
     }),
-    handler: async ({ id, period, type }) => {
+    handler: async ({ id, period, stat_type }) => {
+      const statType = stat_type || "throughput";
       const stats = await http.get<RedisUsageResponse>([
         "v2/redis/stats",
         `${id}?period=${period}`,
       ]);
 
-      const stat = stats[type];
-
+      // Get the sampled stat
+      const stat = stats[statType];
       if (!Array.isArray(stat))
         throw new Error(
-          `Invalid key provided: ${type}. Valid keys are: ${Object.keys(stats).join(", ")}`
+          `Invalid stat_type provided: ${statType}. Valid keys are: ${Object.keys(stats).join(", ")}`
         );
 
+      // Return both 5-day precise stats and sampled stats
       return [
-        JSON.stringify(parseUsageData(stat)),
+        json({
+          // 5-day precise usage stats
+          usage_last_5_days: {
+            days: stats.days,
+            command_usage: stats.dailyrequests,
+            bandwidth_usage: stats.bandwidths,
+          },
+          // Sampled stats for the specified period and type
+          sampled_stats: {
+            period,
+            stat_type: statType,
+            data: parseUsageData(stat),
+          },
+        }),
+        `NOTE: Times are calculated according to UTC+0`,
         `NOTE: Use the timestamps_to_date tool to parse timestamps if needed`,
         `NOTE: Don't try to plot multiple stats in the same chart`,
       ];

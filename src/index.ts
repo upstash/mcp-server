@@ -1,79 +1,246 @@
 #!/usr/bin/env node
 
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { init } from "./init";
-import { log } from "./log";
-import { server } from "./server";
+import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+import { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
+import { Command } from "commander";
+// eslint-disable-next-line unicorn/prefer-node-protocol
+import { createServer, type IncomingMessage } from "http";
+import { createServerInstance } from "./server.js";
 import { config } from "./config";
-import "dotenv/config";
 import { testConnection } from "./test-connection";
+import "dotenv/config";
 
-process.on("uncaughtException", (error) => {
-  log("Uncaught exception:", error.name, error.message, error.stack);
-});
+// Parse CLI arguments using commander
+const program = new Command()
+  .option("--transport <stdio|http>", "transport type", "stdio")
+  .option("--port <number>", "port for HTTP transport", "3000")
+  .option("--email <email>", "Upstash email")
+  .option("--api-key <key>", "Upstash API key")
+  .option("--debug", "Enable debug mode")
+  .allowUnknownOption() // let other wrappers pass through extra flags
+  .parse(process.argv);
 
-process.on("unhandledRejection", (error) => {
-  if (error instanceof Error) log("Unhandled rejection:", error.name, error.message, error.stack);
-  else log("Unhandled rejection:", error);
-});
+const cliOptions = program.opts<{
+  transport: string;
+  port: string;
+  email?: string;
+  apiKey?: string;
+  debug?: boolean;
+}>();
 
-const envApiKey = process.env.UPSTASH_API_KEY;
-const envEmail = process.env.UPSTASH_EMAIL;
+export const DEBUG = cliOptions.debug ?? false;
 
-const USAGE_GENERAL = `Usage: npx @upstash/mcp-server (init|run) <UPSTASH_EMAIL> <UPSTASH_API_KEY>`;
-const USAGE_RUN = `Usage: npx @upstash/mcp-server run <UPSTASH_EMAIL> <UPSTASH_API_KEY>`;
-const USAGE_INIT = `Usage: npx @upstash/mcp-server init <UPSTASH_EMAIL> <UPSTASH_API_KEY>`;
+// Validate transport option
+const allowedTransports = ["stdio", "http"];
+if (!allowedTransports.includes(cliOptions.transport)) {
+  console.error(
+    `Invalid --transport value: '${cliOptions.transport}'. Must be one of: stdio, http.`
+  );
+  process.exit(1);
+}
 
-async function parseArguments() {
-  const [cmd, ...args] = process.argv.slice(2);
-  if (!cmd) throw new Error(USAGE_GENERAL);
-  else if (cmd === "init") {
-    const [email, apiKey, ...rest] = args;
-    const finalApiKey = apiKey || envApiKey;
-    const finalEmail = email || envEmail;
+// Transport configuration
+const TRANSPORT_TYPE = (cliOptions.transport || "stdio") as "stdio" | "http";
 
-    if (rest.length > 0) throw new Error(`Too many arguments. ${USAGE_INIT}`);
-    if (!finalApiKey) throw new Error(`Missing API key. ${USAGE_INIT}`);
-    if (!finalEmail) throw new Error(`Missing email. ${USAGE_INIT}`);
+// Disallow incompatible flags based on transport
+const passedPortFlag = process.argv.includes("--port");
 
-    config.apiKey = finalApiKey;
-    config.email = finalEmail;
+if (TRANSPORT_TYPE === "stdio" && passedPortFlag) {
+  console.error("The --port flag is not allowed when using --transport stdio.");
+  process.exit(1);
+}
 
-    await testConnection();
+// HTTP port configuration
+const CLI_PORT = (() => {
+  const parsed = Number.parseInt(cliOptions.port, 10);
+  return Number.isNaN(parsed) ? undefined : parsed;
+})();
 
-    await init({
-      executablePath: process.argv[1],
-    });
-  } else if (cmd === "run") {
-    const [email, apiKey, ...rest] = args;
-    const finalApiKey = apiKey || envApiKey;
-    const finalEmail = email || envEmail;
+// Store SSE transports by session ID
+const sseTransports: Record<string, SSEServerTransport> = {};
 
-    if (!finalApiKey) throw new Error(`Missing API key. ${USAGE_RUN}`);
-    if (!finalEmail) throw new Error(`Missing email. ${USAGE_RUN}`);
-    if (rest.length > 0) throw new Error(`Too many arguments. ${USAGE_RUN}`);
-    log("Starting MCP server");
+function getClientIp(req: IncomingMessage): string | undefined {
+  // Check both possible header casings
+  const forwardedFor = req.headers["x-forwarded-for"] || req.headers["X-Forwarded-For"];
 
-    config.apiKey = finalApiKey;
-    config.email = finalEmail;
+  if (forwardedFor) {
+    // X-Forwarded-For can contain multiple IPs
+    const ips = Array.isArray(forwardedFor) ? forwardedFor[0] : forwardedFor;
+    const ipList = ips.split(",").map((ip: string) => ip.trim());
 
-    await testConnection();
-
-    // Start the server
-    await main();
-  } else {
-    throw new Error(`Unknown command: ${cmd}. Expected 'init' or 'run'. ${USAGE_GENERAL}`);
+    // Find the first public IP address
+    for (const ip of ipList) {
+      const plainIp = ip.replace(/^::ffff:/, "");
+      if (
+        !plainIp.startsWith("10.") &&
+        !plainIp.startsWith("192.168.") &&
+        !/^172\.(1[6-9]|2\d|3[01])\./.test(plainIp)
+      ) {
+        return plainIp;
+      }
+    }
+    // If all are private, use the first one
+    return ipList[0].replace(/^::ffff:/, "");
   }
+
+  // Fallback: use remote address, strip IPv6-mapped IPv4
+  if (req.socket?.remoteAddress) {
+    return req.socket.remoteAddress.replace(/^::ffff:/, "");
+  }
+  return undefined;
 }
 
 async function main() {
-  const transport = new StdioServerTransport();
-  await server.connect(transport);
+  // Get credentials from CLI options or environment
+  const email = cliOptions.email || process.env.UPSTASH_EMAIL;
+  const apiKey = cliOptions.apiKey || process.env.UPSTASH_API_KEY;
+
+  if (!email || !apiKey) {
+    console.error(
+      "Missing required credentials. Provide --email and --api-key or set UPSTASH_EMAIL and UPSTASH_API_KEY environment variables."
+    );
+    process.exit(1);
+  }
+
+  // Set config
+  config.email = email;
+  config.apiKey = apiKey;
+
+  // Test connection
+  await testConnection();
+
+  const transportType = TRANSPORT_TYPE;
+
+  if (transportType === "http") {
+    // Get initial port from environment or use default
+    const initialPort = CLI_PORT ?? 3000;
+    // Keep track of which port we end up using
+    let actualPort = initialPort;
+    const httpServer = createServer(async (req: IncomingMessage, res: any) => {
+      const url = new (globalThis as any).URL(req.url || "", `http://${req.headers.host}`).pathname;
+
+      // Set CORS headers for all responses
+      res.setHeader("Access-Control-Allow-Origin", "*");
+      res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS,DELETE");
+      res.setHeader(
+        "Access-Control-Allow-Headers",
+        "Content-Type, MCP-Session-Id, MCP-Protocol-Version, X-Upstash-API-Key, Upstash-API-Key, X-API-Key, Authorization"
+      );
+      res.setHeader("Access-Control-Expose-Headers", "MCP-Session-Id");
+
+      // Handle preflight OPTIONS requests
+      if (req.method === "OPTIONS") {
+        res.writeHead(200);
+        res.end();
+        return;
+      }
+
+      try {
+        // Extract client IP address using socket remote address (most reliable)
+        const _clientIp = getClientIp(req);
+
+        // Create new server instance for each request
+        const requestServer = createServerInstance();
+
+        if (url === "/mcp") {
+          const transport = new StreamableHTTPServerTransport({
+            sessionIdGenerator: undefined,
+          });
+          await requestServer.connect(transport);
+          await transport.handleRequest(req, res);
+        } else if (url === "/sse" && req.method === "GET") {
+          // Create new SSE transport for GET request
+          const sseTransport = new SSEServerTransport("/messages", res);
+          // Store the transport by session ID
+          sseTransports[sseTransport.sessionId] = sseTransport;
+          // Clean up transport when connection closes
+          res.on("close", () => {
+            delete sseTransports[sseTransport.sessionId];
+          });
+          await requestServer.connect(sseTransport);
+        } else if (url === "/messages" && req.method === "POST") {
+          // Get session ID from query parameters
+          const sessionId =
+            new (globalThis as any).URL(
+              req.url || "",
+              `http://${req.headers.host}`
+            ).searchParams.get("sessionId") ?? "";
+
+          if (!sessionId) {
+            res.writeHead(400);
+            res.end("Missing sessionId parameter");
+            return;
+          }
+
+          // Get existing transport for this session
+          const sseTransport = sseTransports[sessionId];
+          if (!sseTransport) {
+            res.writeHead(400);
+            res.end(`No transport found for sessionId: ${sessionId}`);
+            return;
+          }
+
+          // Handle the POST message with the existing transport
+          await sseTransport.handlePostMessage(req, res);
+        } else if (url === "/ping") {
+          res.writeHead(200, { "Content-Type": "text/plain" });
+          res.end("pong");
+        } else {
+          res.writeHead(404);
+          res.end("Not found");
+        }
+      } catch (error) {
+        console.error("Error handling request:", error);
+        if (!res.headersSent) {
+          res.writeHead(500);
+          res.end("Internal Server Error");
+        }
+      }
+    });
+
+    // Function to attempt server listen with port fallback
+    const startServer = (port: number, maxAttempts = 10) => {
+      httpServer.once("error", (err: NodeJS.ErrnoException) => {
+        if (err.code === "EADDRINUSE" && port < initialPort + maxAttempts) {
+          console.warn(`Port ${port} is in use, trying port ${port + 1}...`);
+          startServer(port + 1, maxAttempts);
+        } else {
+          console.error(`Failed to start server: ${err.message}`);
+          process.exit(1);
+        }
+      });
+
+      httpServer.listen(port, () => {
+        actualPort = port;
+        console.error(
+          `Upstash MCP Server running on ${transportType.toUpperCase()} at http://localhost:${actualPort}/mcp with SSE endpoint at /sse`
+        );
+      });
+    };
+
+    // Start the server with initial port
+    startServer(initialPort);
+  } else {
+    // Stdio transport - this is already stateless by nature
+    const server = createServerInstance();
+    const transport = new StdioServerTransport();
+
+    // Log the RCP messages coming to the transport
+    // const originalOnmessage = transport.onmessage;
+    // transport.onmessage = (message) => {
+    //   console.error("message", message);
+
+    //   originalOnmessage?.(message);
+    // };
+
+    await server.connect(transport);
+    console.error("Upstash MCP Server running on stdio");
+  }
 }
 
 // eslint-disable-next-line unicorn/prefer-top-level-await
-parseArguments().catch((error) => {
-  if (!(error instanceof Error)) throw error;
-  console.error(error.message);
+main().catch((error) => {
+  console.error("Fatal error in main():", error);
   process.exit(1);
 });

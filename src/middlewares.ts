@@ -2,29 +2,50 @@ import type { UpstashRequest } from "./http";
 
 type Middleware = (req: UpstashRequest, next: () => Promise<unknown>) => Promise<unknown>;
 
-const formatCreationTime = (obj: unknown) => {
-  if (
-    obj &&
-    typeof obj === "object" &&
-    "creation_time" in obj &&
-    typeof obj.creation_time === "number" &&
-    obj.creation_time > 0
-  ) {
-    obj.creation_time = new Date(obj.creation_time * 1000).toLocaleString();
+const formatTimestamps = (obj: unknown): void => {
+  if (!obj || typeof obj !== "object") {
+    return;
+  }
+
+  // Handle arrays
+  if (Array.isArray(obj)) {
+    for (const item of obj) {
+      formatTimestamps(item);
+    }
+    return;
+  }
+
+  // Handle objects
+  for (const [key, value] of Object.entries(obj)) {
+    // Check if key matches our criteria: contains "creationTime" or has "createdAt" anywhere (case-insensitive)
+    const shouldFormat =
+      typeof value === "number" &&
+      (key === "creationTime" ||
+        key === "creation_time" ||
+        key === "time" ||
+        key.toLowerCase().includes("createdat"));
+
+    if (shouldFormat && typeof value === "number" && value > 0) {
+      // Format timestamp to human readable format
+      // Assume timestamps > 1_000_000_000_000 are in milliseconds, otherwise seconds
+      const timestamp = value > 1_000_000_000_000 ? value : value * 1000;
+
+      // Show milliseconds in the human readable format
+
+      const formatted = new Date(timestamp).toLocaleString("en-US", { timeZoneName: "short" });
+      (obj as any)[key] = `${formatted} (${value})`;
+    } else if (value && typeof value === "object") {
+      // Recursively process nested objects
+      formatTimestamps(value);
+    }
   }
 };
 
 const middlewares: Middleware[] = [
-  // Middleware to format creation_time field to human readable format
+  // Middleware to format timestamp fields to human readable format
   async (req, next) => {
     const res = await next();
-    if (Array.isArray(res)) {
-      for (const element of res) {
-        formatCreationTime(element);
-      }
-    } else {
-      formatCreationTime(res);
-    }
+    formatTimestamps(res);
     return res;
   },
 ];

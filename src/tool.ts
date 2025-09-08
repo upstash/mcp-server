@@ -1,7 +1,6 @@
 import type { CallToolResultSchema } from "@modelcontextprotocol/sdk/types.js";
 import type { ZodSchema } from "zod";
-import { z } from "zod";
-import { zodToJsonSchema } from "zod-to-json-schema";
+import type { z } from "zod";
 import { MAX_MESSAGE_LENGTH } from "./settings";
 
 type HandlerResponse = string | string[] | z.infer<typeof CallToolResultSchema>;
@@ -39,34 +38,7 @@ export function handlerResponseToCallResult(
     );
 
     return {
-      content: truncatedArray.map((text) => ({ type: "text", text })),
+      content: truncatedArray.map((text) => ({ type: "text" as const, text })),
     };
   } else return response;
-}
-
-function convertToJsonSchema(schema: ZodSchema) {
-  const jsonSchema = zodToJsonSchema(schema);
-  delete jsonSchema.$schema;
-
-  // Remove additionalProperties field from all objects, as it's not needed
-  const removeAdditionalProperties = (schema: any) => {
-    if (schema.type !== "object") return;
-
-    delete schema.additionalProperties;
-    for (const value of Object.values(schema.properties)) {
-      removeAdditionalProperties(value);
-    }
-  };
-
-  removeAdditionalProperties(jsonSchema);
-
-  return jsonSchema;
-}
-
-export function convertToTools(tools: Record<string, CustomTool>) {
-  return Object.entries(tools).map(([name, tool]) => ({
-    name,
-    description: tool.description,
-    inputSchema: convertToJsonSchema(tool.inputSchema ?? z.object({})),
-  }));
 }

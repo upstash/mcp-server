@@ -1,0 +1,36 @@
+# Source files
+src/
+scripts/
+*.ts
+*.tsx
+
+# Configuration files
+tsconfig.json
+tsup.config.ts
+eslint.config.mjs
+prettier.config.mjs
+smithery.yaml
+
+# Development files
+*.md
+LICENSE
+Dockerfile
+
+# Dependencies
+node_modules/
+pnpm-lock.yaml
+
+# Build artifacts (keep only dist/)
+.git/
+.gitignore
+
+# DXT files (if any)
+dxt/
+
+# Test files
+*.test.*
+test/
+tests/
+
+# Environment files
+.env*

@@ -173,3 +173,8 @@ dist
 
 # Finder (MacOS) folder config
 .DS_Store
+
+# Generated MCPB files
+manifest.json
+*.mcpb
+mcpb/upstash-mcp.mcpb

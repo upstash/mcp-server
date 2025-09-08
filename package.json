@@ -20,9 +20,7 @@
     "logs": "tail -n 20 -f ~/Library/Logs/Claude/mcp*.log",
     "fmt": "prettier --write .",
     "test": "vitest",
-    "lint": "eslint \"**/*.{js,ts,tsx}\" --quiet --fix && tsc --noEmit",
-    "generate-manifest": "tsx scripts/generate-mcpb-manifest.ts",
-    "pack-mcpb": "pnpm install && pnpm run build && rm -rf node_modules && pnpm install --production && pnpm run generate-manifest && mv mcpb/.mcpbignore .mcpbignore && mv mcpb/manifest.json manifest.json && rm -f mcpb/upstash-mcp.mcpb && tar -czf mcpb/upstash-mcp.mcpb --exclude-from=.mcpbignore --exclude=mcpb/upstash-mcp.mcpb . && mv manifest.json mcpb/manifest.json && mv .mcpbignore mcpb/.mcpbignore && pnpm install"
+    "lint": "eslint \"**/*.{js,ts,tsx}\" --quiet --fix && tsc --noEmit"
   },
   "files": [
     "dist"

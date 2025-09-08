@@ -30,6 +30,3 @@ jobs:
 
       - name: Set package version
         run: echo $(jq --arg v "${{ env.VERSION }}" '(.version) = $v' package.json) > package.json
-
-      - name: Build and Generate MCPB Bundle
-        run: pnpm run pack-mcpb

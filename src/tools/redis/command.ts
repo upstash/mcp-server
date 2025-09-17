@@ -38,6 +38,10 @@ NOTE: Multiple commands will be executed as a pipeline for better performance.`,
         throw new Error(
           "Either provide database_id OR both database_rest_url and database_rest_token"
         );
+      } else if (!database_id && (!database_rest_url || !database_rest_token)) {
+        throw new Error(
+          "Either provide database_id OR both database_rest_url and database_rest_token"
+        );
       }
 
       let restUrl = database_rest_url;
@@ -47,7 +51,7 @@ NOTE: Multiple commands will be executed as a pipeline for better performance.`,
       if (database_id && (!database_rest_url || !database_rest_token)) {
         log("Fetching database details for database_id:", database_id);
         const db = await http.get<RedisDatabase>(["v2/redis/database", database_id]);
-        restUrl = db.endpoint;
+        restUrl = "https://" + db.endpoint;
         restToken = db.rest_token;
       }
 

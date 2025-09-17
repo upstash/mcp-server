@@ -1,6 +1,9 @@
 # Upstash MCP Server
 
-[![Install MCP Server](https://cursor.com/deeplink/mcp-install-dark.svg)](https://cursor.com/en/install-mcp?name=upstash-mcp&config=eyJjb21tYW5kIjoibm9kZSIsImFyZ3MiOlsiL3BhdGgvdG8vdXBzdGFzaC1tY3AvaW5kZXguanMiLCItLWVtYWlsIiwiWU9VUl9FTUFJTF9IRVJFIiwiLS1hcGkta2V5IiwiWU9VUl9BUElfS0VZX0hFUkUiXX0%3D) [<img alt="Install in VS Code (npx)" src="https://img.shields.io/badge/Install%20in%20VS%20Code-0098FF?style=for-the-badge&logo=visualstudiocode&logoColor=white">](https://insiders.vscode.dev/redirect?url=vscode%3Amcp%2Finstall%3F%7B%22name%22%3A%22upstash-mcp%22%2C%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22%40upstash%2Fmcp-server%40latest%22%2C%22--email%22%2C%22YOUR_EMAIL%22%2C%22--api-key%22%2C%22YOUR_API_KEY%22%5D%7D)
+[![Install MCP Server](https://cursor.com/deeplink/mcp-install-dark.svg)](https://cursor.com/en/install-mcp?name=upstash&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIkB1cHN0YXNoL21jcC1zZXJ2ZXJAbGF0ZXN0IiwiLS1lbWFpbCIsIllPVVJfRU1BSUwiLCItLWFwaS1rZXkiLCJZT1VSX0FQSV9LRVkiXX0=%3D)
+
+[![Install MCP Server](https://cursor.com/deeplink/mcp-install-dark.svg)](https://cursor.com/en/install-mcp?name=upstash&config=eyJjb21tYW5kIjoibnB4IC15IEB1cHN0YXNoL21jcC1zZXJ2ZXJAbGF0ZXN0IC0tZW1haWwgWU9VUl9FTUFJTCAtLWFwaS1rZXkgWU9VUl9BUElfS0VZIn0%3D)
+[<img alt="Install in VS Code (npx)" src="https://img.shields.io/badge/Install%20in%20VS%20Code-0098FF?style=for-the-badge&logo=visualstudiocode&logoColor=white">](https://insiders.vscode.dev/redirect?url=vscode%3Amcp%2Finstall%3F%7B%22name%22%3A%22upstash-mcp%22%2C%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22%40upstash%2Fmcp-server%40latest%22%2C%22--email%22%2C%22YOUR_EMAIL%22%2C%22--api-key%22%2C%22YOUR_API_KEY%22%5D%7D)
 
 [![smithery badge](https://smithery.ai/badge/@upstash/mcp-server)](https://smithery.ai/server/@upstash/mcp-server)
 

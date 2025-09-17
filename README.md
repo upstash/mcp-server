@@ -1,5 +1,7 @@
 # Upstash MCP Server
 
+[![Install MCP Server](https://cursor.com/deeplink/mcp-install-dark.svg)](https://cursor.com/en/install-mcp?name=upstash-mcp&config=eyJjb21tYW5kIjoibm9kZSIsImFyZ3MiOlsiL3BhdGgvdG8vdXBzdGFzaC1tY3AvaW5kZXguanMiLCItLWVtYWlsIiwiWU9VUl9FTUFJTF9IRVJFIiwiLS1hcGkta2V5IiwiWU9VUl9BUElfS0VZX0hFUkUiXX0%3D) [<img alt="Install in VS Code (npx)" src="https://img.shields.io/badge/Install%20in%20VS%20Code-0098FF?style=for-the-badge&logo=visualstudiocode&logoColor=white">](https://insiders.vscode.dev/redirect?url=vscode%3Amcp%2Finstall%3F%7B%22name%22%3A%22upstash-mcp%22%2C%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22%40upstash%2Fmcp-server%40latest%22%2C%22--email%22%2C%22YOUR_EMAIL%22%2C%22--api-key%22%2C%22YOUR_API_KEY%22%5D%7D)
+
 [![smithery badge](https://smithery.ai/badge/@upstash/mcp-server)](https://smithery.ai/server/@upstash/mcp-server)
 
 Model Context Protocol (MCP) is a [new, standardized protocol](https://modelcontextprotocol.io/introduction) for managing context between large language models (LLMs) and external systems. In this repository, we provide an installer as well as an MCP Server for [Upstash Developer API's](https://upstash.com/docs/devops/developer-api).
@@ -14,83 +16,117 @@ This allows you to use any MCP Client to interact with your Upstash account usin
 
 # Usage
 
+## Quick Setup
+
+First, get your Upstash credentials:
+
+- **Email**: Your Upstash account email
+- **API Key**: Get it from [Upstash Console → Account → API Keys](https://console.upstash.com/account/api)
+
+Add this to your MCP client configuration:
+
+```json
+{
+  "mcpServers": {
+    "upstash": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@upstash/mcp-server@latest",
+        "--email",
+        "YOUR_EMAIL",
+        "--api-key",
+        "YOUR_API_KEY"
+      ]
+    }
+  }
+}
+```
+
+**Streamable HTTP Transport (for web applications):**
+
+Start your MCP server with the `http` transport:
+
+```bash
+npx @upstash/mcp-server@latest --transport http --port 3000 --email YOUR_EMAIL --api-key YOUR_API_KEY
+```
+
+And configure your MCP client to use the HTTP transport:
+
+```json
+{
+  "mcpServers": {
+    "upstash": {
+      "url": "http://localhost:3000/mcp"
+    }
+  }
+}
+```
+
+<details>
+<summary><strong>Docker Setup</strong></summary>
+
+1. **Create a Dockerfile:**
+
+   <summary>Click to see Dockerfile content</summary>
+
+   ```Dockerfile
+   FROM node:18-alpine
+
+   WORKDIR /app
+
+   # Install the latest version globally
+   RUN npm install -g @upstash/mcp-server
+
+   # Expose default port if needed (optional, depends on MCP client interaction)
+   # EXPOSE 3000
+
+   # Default command to run the server
+   CMD ["upstash-mcp-server"]
+   ```
+
+   </details>
+
+   Then, build the image using a tag (e.g., `upstash-mcp`). **Make sure Docker Desktop (or the Docker daemon) is running.** Run the following command in the same directory where you saved the `Dockerfile`:
+
+   ```bash
+   docker build -t upstash-mcp .
+   ```
+
+2. **Configure Your MCP Client:**
+
+   Update your MCP client's configuration to use the Docker command.
+
+   _Example for a claude_desktop_config.json:_
+
+   ```json
+   {
+     "mcpServers": {
+       "upstash": {
+         "command": "docker",
+         "args": [
+           "run",
+           "-i",
+           "--rm",
+           "-e",
+           "UPSTASH_EMAIL=YOUR_EMAIL",
+           "-e",
+           "UPSTASH_API_KEY=YOUR_API_KEY",
+           "upstash-mcp"
+         ]
+       }
+     }
+   }
+   ```
+
+   _Note: This is an example configuration. Please refer to the specific examples for your MCP client (like Cursor, VS Code, etc.) earlier in this README to adapt the structure (e.g., `mcpServers` vs `servers`). Also, ensure the image name in `args` matches the tag used during the `docker build` command._
+
+</details>
+
 ## Requirements
 
 - Node.js >= v18.0.0
 - [Upstash API key](https://upstash.com/docs/devops/developer-api) - You can create one from [here](https://console.upstash.com/account/api).
-
-## How to use locally
-
-### Installing for Claude Desktop
-
-To install Upstash MCP Server for Claude Desktop automatically via [Smithery](https://smithery.ai/server/@upstash/mcp-server) run the following command:
-
-```bash
-npx -y @smithery/cli@latest install @upstash/mcp-server --client claude
-```
-
-<details>
-  <summary>Install without Smithery</summary>
-  
-  ```bash
-  npx @upstash/mcp-server init <UPSTASH_EMAIL> <UPSTASH_API_KEY>
-  ```
-
-This will edit your MCP config file and add an entry for Upstash.
-
-</details>
-
-### Installing for Cursor
-
-To install Upstash MCP Server for Cursor automatically via [Smithery](https://smithery.ai/server/@upstash/mcp-server) run the following command:
-
-```bash
-npx -y @smithery/cli@latest install @upstash/mcp-server --client cursor
-```
-
-<details>
-  <summary>Install without Smithery</summary>
-  
-  Add the following command to the MCP config in Cursor. For more info, check the [Cursor MCP docs](https://docs.cursor.com/context/model-context-protocol#configuring-mcp-servers).
-
-```bash
-npx -y @upstash/mcp-server run <UPSTASH_EMAIL> <UPSTASH_API_KEY>
-```
-
-</details>
-
-### Installing for Windsurf
-
-To install Upstash MCP Server for Windsurf automatically via [Smithery](https://smithery.ai/server/@upstash/mcp-server) run the following command:
-
-```bash
-npx -y @smithery/cli@latest install @upstash/mcp-server --client windsurf
-```
-
-<details>
-  <summary>Install without Smithery</summary>
-  
-  Add the following command to the MCP config in Windsurf. For more info, check out the [Windsurf MCP docs](https://docs.windsurf.com/windsurf/mcp#mcp-config-json).
-
-```bash
-npx -y @upstash/mcp-server run <UPSTASH_EMAIL> <UPSTASH_API_KEY>
-```
-
-</details>
-
-### Running with Docker
-
-You can also use the provided Docker image to run the server.
-
-```bash
-docker build -t upstash-mcp .
-
-# Run the stdio server, add this command to you MCP config
-docker run --rm -i \
-  -e UPSTASH_EMAIL=<UPSTASH_EMAIL> \
-  -e UPSTASH_API_KEY=<UPSTASH_API_KEY> \
-  upstash-mcp
-```
 
 ### Troubleshooting
 
@@ -146,23 +182,26 @@ UPSTASH_EMAIL=<UPSTASH_EMAIL>
 UPSTASH_API_KEY=<UPSTASH_API_KEY>
 ```
 
-This will be used for setting the Claude config and running mcp inspector.
+This will be used for setting the Claude config.
 
 ### Testing with Claude Desktop
 
-To install the Claude Desktop config for local development, run the following command:
-
-```bash
-pnpm run setup
-```
-
-This will add an `upstash` entry to your MCP config file that points to the local build of the package.
+To install the Claude Desktop config for local development, add the following to your Claude Desktop MCP config:
 
 ```json
 {
-  "upstash": {
-    "command": "node",
-    "args": ["<path-to-repo>/dist/index.js", "run", "<UPSTASH_EMAIL>", "<UPSTASH_API_KEY>"]
+  "mcpServers": {
+    "upstash": {
+      "command": "node",
+      "args": [
+        "<path-to-repo>/dist/index.js",
+        "run",
+        "--email",
+        "<UPSTASH_EMAIL>",
+        "--api-key",
+        "<UPSTASH_API_KEY>"
+      ]
+    }
   }
 }
 ```
@@ -175,12 +214,4 @@ To view the logs from the MCP Server in real time, run the following command:
 
 ```bash
 pnpm run logs
-```
-
-### Testing with MCP Inspector
-
-You can also use the MCP Inspector to test the tools.
-
-```bash
-pnpm run inspector
 ```

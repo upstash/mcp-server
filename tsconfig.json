@@ -1,8 +1,8 @@
 {
   "compilerOptions": {
-    "lib": ["ES2015"],
+    "lib": ["ES2019"],
     "module": "esnext",
-    "target": "ES2015",
+    "target": "ES2019",
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
     "noEmit": true,

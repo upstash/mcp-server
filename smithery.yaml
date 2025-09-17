@@ -1,29 +1,18 @@
 startCommand:
-  type: stdio
+  type: "http"
   configSchema:
-    {
-      "type": "object",
-      "properties": {
-        "email": {
-          "type": "string",
-          "description": "Your Upstash email address"
-        },
-        "token": {
-          "type": "string",
-          "description": "Your Upstash management API key"
-        }
-      },
-      "required": ["email", "token"],
-      "additionalProperties": false
-    }
-  commandFunction:
-    |-
-    (config) => ({
-      "command": "node",
-      "args": [
-        "dist/index.js",
-        "run",
-        config.email,
-        config.token
-      ]
-    })
+    type: "object"
+    required: ["email", "apiKey"]
+    additionalProperties: false
+    properties:
+      email:
+        type: "string"
+        title: "Email"
+        description: "Your Upstash email address"
+      apiKey:
+        type: "string"
+        title: "API Key"
+        description: "Your Upstash management API key"
+  exampleConfig:
+    email: "user@example.com"
+    apiKey: "sk-example123"

@@ -1,6 +1,8 @@
 import { z } from "zod";
 import { json, tool } from "..";
 import { log } from "../../log";
+import { http } from "../../http";
+import type { RedisDatabase } from "./types";
 import fetch from "node-fetch";
 
 type RedisCommandResult =
@@ -12,80 +14,91 @@ type RedisCommandResult =
     };
 
 export const redisCommandTools = {
-  redis_database_run_single_redis_command: tool({
-    description: `Run a single Redis command on a specific Upstash redis database.
+  redis_database_run_redis_commands: tool({
+    description: `Run one or more Redis commands on a specific Upstash redis database. Either provide database_id OR both database_rest_url and database_rest_token.
 NOTE: For discovery, use SCAN over KEYS. Use TYPE to get the type of a key.
-NOTE: SCAN cursor [MATCH pattern] [COUNT count] [TYPE type]`,
+NOTE: SCAN cursor [MATCH pattern] [COUNT count] [TYPE type]
+NOTE: Multiple commands will be executed as a pipeline for better performance.`,
     inputSchema: z.object({
+      database_id: z.string().optional().describe("The ID of the database to run commands on."),
       database_rest_url: z
         .string()
+        .optional()
         .describe("The REST URL of the database. Example: https://***.upstash.io"),
-      database_rest_token: z.string().describe("The REST token of the database."),
-      command: z
-        .array(z.string())
-        .describe("The Redis command to run. Example: ['SET', 'foo', 'bar', 'EX', 100]"),
-    }),
-
-    handler: async ({ database_rest_url, database_rest_token, command }) => {
-      const req = await fetch(database_rest_url, {
-        method: "POST",
-        body: JSON.stringify(command),
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${database_rest_token}`,
-        },
-      });
-
-      const result = (await req.json()) as RedisCommandResult;
-
-      log("command result:", result);
-
-      if ("error" in result) {
-        throw new Error("Redis error: " + result.error);
-      }
-
-      const isScanCommand = command[0].toLocaleLowerCase().includes("scan");
-      const messages = [json(result)];
-
-      if (isScanCommand)
-        messages.push(`NOTE: Use the returned cursor to get the next set of keys.
-NOTE: The result might be too large to be returned. If applicable, stop after the second SCAN command and ask the user if they want to continue.`);
-
-      return messages;
-    },
-  }),
-
-  redis_database_run_multiple_redis_commands: tool({
-    description: `Run multiple Redis commands on a specific Upstash redis database`,
-    inputSchema: z.object({
-      database_rest_url: z
-        .string()
-        .describe("The REST URL of the database. Example: https://***.upstash.io"),
-      database_rest_token: z.string().describe("The REST token of the database."),
+      database_rest_token: z.string().optional().describe("The REST token of the database."),
       commands: z
         .array(z.array(z.string()))
-        .describe("The Redis commands to run. Example: [['SET', 'foo', 'bar'], ['GET', 'foo']]"),
+        .describe(
+          "The Redis commands to run. For single command: [['SET', 'foo', 'bar']], for multiple: [['SET', 'foo', 'bar'], ['GET', 'foo']]"
+        ),
     }),
 
-    handler: async ({ database_rest_url, database_rest_token, commands }) => {
-      const req = await fetch(database_rest_url + "/pipeline", {
+    handler: async ({ database_id, database_rest_url, database_rest_token, commands }) => {
+      if (database_id && (database_rest_url || database_rest_token)) {
+        throw new Error(
+          "Either provide database_id OR both database_rest_url and database_rest_token"
+        );
+      } else if (!database_id && (!database_rest_url || !database_rest_token)) {
+        throw new Error(
+          "Either provide database_id OR both database_rest_url and database_rest_token"
+        );
+      }
+
+      let restUrl = database_rest_url;
+      let restToken = database_rest_token;
+
+      // If only database_id is provided, fetch the database details
+      if (database_id && (!database_rest_url || !database_rest_token)) {
+        log("Fetching database details for database_id:", database_id);
+        const db = await http.get<RedisDatabase>(["v2/redis/database", database_id]);
+        restUrl = "https://" + db.endpoint;
+        restToken = db.rest_token;
+      }
+
+      if (!restUrl || !restToken) {
+        throw new Error("Could not determine REST URL and token for the database");
+      }
+      const isSingleCommand = commands.length === 1;
+      const url = isSingleCommand ? restUrl : restUrl + "/pipeline";
+      const body = isSingleCommand ? JSON.stringify(commands[0]) : JSON.stringify(commands);
+
+      const req = await fetch(url, {
         method: "POST",
-        body: JSON.stringify(commands),
+        body,
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${database_rest_token}`,
+          Authorization: `Bearer ${restToken}`,
         },
       });
 
-      const result = (await req.json()) as RedisCommandResult[];
+      if (isSingleCommand) {
+        const result = (await req.json()) as RedisCommandResult;
 
-      log("commands result:", result);
+        log("command result:", result);
 
-      if (result.some((r) => "error" in r)) {
-        throw new Error("Some commands in the pipeline resulted in an error:\n" + json(result));
+        if ("error" in result) {
+          throw new Error("Redis error: " + result.error);
+        }
+
+        const isScanCommand = commands[0][0].toLocaleLowerCase().includes("scan");
+        const messages = [json(result)];
+
+        if (isScanCommand)
+          messages.push(`NOTE: Use the returned cursor to get the next set of keys.
+NOTE: The result might be too large to be returned. If applicable, stop after the second SCAN command and ask the user if they want to continue.`);
+
+        return messages;
+      } else {
+        const result = (await req.json()) as RedisCommandResult[];
+
+        log("commands result:", result);
+
+        if (result.some((r) => "error" in r)) {
+          throw new Error("Some commands in the pipeline resulted in an error:\n" + json(result));
+        }
+
+        return json(result);
       }
-
-      return json(result);
     },
   }),
 };

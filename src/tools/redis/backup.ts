@@ -6,36 +6,20 @@ import type { RedisBackup } from "./types";
 export const redisBackupTools = {
   redis_database_manage_backup: tool({
     description: `Create, delete, or restore backups for a specific Upstash redis database. This tool handles all backup operations in one unified interface.`,
-    inputSchema: z
-      .object({
-        database_id: z.string().describe("The ID of the database to manage backups for."),
-        operation: z
-          .union([z.literal("create"), z.literal("delete"), z.literal("restore")])
-          .describe("The backup operation to perform: create, delete, or restore."),
-        backup_name: z
-          .string()
-          .optional()
-          .describe("Name for the backup (required for create operation)."),
-        backup_id: z
-          .string()
-          .optional()
-          .describe("ID of the backup (required for delete and restore operations)."),
-      })
-      .refine(
-        (data) => {
-          if (data.operation === "create" && !data.backup_name) {
-            return false;
-          }
-          if ((data.operation === "delete" || data.operation === "restore") && !data.backup_id) {
-            return false;
-          }
-          return true;
-        },
-        {
-          message:
-            "backup_name is required for create operation, backup_id is required for delete and restore operations",
-        }
-      ),
+    inputSchema: z.object({
+      database_id: z.string().describe("The ID of the database to manage backups for."),
+      operation: z
+        .union([z.literal("create"), z.literal("delete"), z.literal("restore")])
+        .describe("The backup operation to perform: create, delete, or restore."),
+      backup_name: z
+        .string()
+        .optional()
+        .describe("Name for the backup (required for create operation)."),
+      backup_id: z
+        .string()
+        .optional()
+        .describe("ID of the backup (required for delete and restore operations)."),
+    }),
     handler: async ({ database_id, operation, backup_name, backup_id }) => {
       switch (operation) {
         case "create": {

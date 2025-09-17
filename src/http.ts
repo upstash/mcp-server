@@ -133,8 +133,7 @@ export class HttpClient {
       ...init,
       headers: {
         ...init.headers,
-
-        // , Authorization: "***"
+        Authorization: "***",
       },
     });
 

@@ -43,31 +43,25 @@ Add this to your MCP client configuration:
 }
 ```
 
-**HTTP Transport (for web applications):**
+**Streamable HTTP Transport (for web applications):**
+
+Start your MCP server with the `http` transport:
+
+```bash
+npx @upstash/mcp-server@latest --transport http --port 3000 --email YOUR_EMAIL --api-key YOUR_API_KEY
+```
+
+And configure your MCP client to use the HTTP transport:
 
 ```json
 {
   "mcpServers": {
     "upstash": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@upstash/mcp-server@latest",
-        "--transport",
-        "http",
-        "--port",
-        "3000",
-        "--email",
-        "YOUR_EMAIL",
-        "--api-key",
-        "YOUR_API_KEY"
-      ]
+      "url": "http://localhost:3000/mcp"
     }
   }
 }
 ```
-
-The server will be available at `http://localhost:3000/mcp` with SSE endpoint at `/sse`.
 
 <details>
 <summary><strong>Docker Setup</strong></summary>

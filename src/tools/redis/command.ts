@@ -19,29 +19,19 @@ export const redisCommandTools = {
 NOTE: For discovery, use SCAN over KEYS. Use TYPE to get the type of a key.
 NOTE: SCAN cursor [MATCH pattern] [COUNT count] [TYPE type]
 NOTE: Multiple commands will be executed as a pipeline for better performance.`,
-    inputSchema: z
-      .object({
-        database_id: z.string().optional().describe("The ID of the database to run commands on."),
-        database_rest_url: z
-          .string()
-          .optional()
-          .describe("The REST URL of the database. Example: https://***.upstash.io"),
-        database_rest_token: z.string().optional().describe("The REST token of the database."),
-        commands: z
-          .array(z.array(z.string()))
-          .describe(
-            "The Redis commands to run. For single command: [['SET', 'foo', 'bar']], for multiple: [['SET', 'foo', 'bar'], ['GET', 'foo']]"
-          ),
-      })
-      .refine(
-        (data) => {
-          // Either database_id OR (database_rest_url AND database_rest_token) must be provided
-          return data.database_id || (data.database_rest_url && data.database_rest_token);
-        },
-        {
-          message: "Either provide database_id OR both database_rest_url and database_rest_token",
-        }
-      ),
+    inputSchema: z.object({
+      database_id: z.string().optional().describe("The ID of the database to run commands on."),
+      database_rest_url: z
+        .string()
+        .optional()
+        .describe("The REST URL of the database. Example: https://***.upstash.io"),
+      database_rest_token: z.string().optional().describe("The REST token of the database."),
+      commands: z
+        .array(z.array(z.string()))
+        .describe(
+          "The Redis commands to run. For single command: [['SET', 'foo', 'bar']], for multiple: [['SET', 'foo', 'bar'], ['GET', 'foo']]"
+        ),
+    }),
 
     handler: async ({ database_id, database_rest_url, database_rest_token, commands }) => {
       if (database_id && (database_rest_url || database_rest_token)) {

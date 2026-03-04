@@ -1,36 +1,28 @@
 import { http, createQStashClient, type HttpClient } from "../../http";
 import type { QStashUser } from "./types";
 
-let cachedToken: string | null = null;
-let tokenExpiry: number = 0;
+let cachedCreds: { token: string; url: string } | null = null;
+let credsExpiry: number = 0;
 
-/**
- * Gets the QStash token from the Upstash API
- * Caches the token for 1 hour to avoid unnecessary API calls
- */
-export async function getQStashToken(): Promise<string> {
+export async function getQStashCredentials(): Promise<{ token: string; url: string }> {
   const now = Date.now();
 
-  // Return cached token if it's still valid (cached for 1 hour)
-  if (cachedToken && now < tokenExpiry) {
-    return cachedToken;
+  if (cachedCreds && now < credsExpiry) {
+    return cachedCreds;
   }
 
   try {
-    const user = await http.get<QStashUser>("qstash/user");
-    cachedToken = user.token;
-    tokenExpiry = now + 60 * 60 * 1000; // Cache for 1 hour
-    return user.token;
+    const user = await http.get<QStashUser>("v2/qstash/user");
+    cachedCreds = { token: user.token, url: "https://qstash.upstash.io" };
+    credsExpiry = now + 60 * 60 * 1000;
+    return cachedCreds;
   } catch (error) {
     throw new Error(
-      `Failed to get QStash token: ${error instanceof Error ? error.message : String(error)}`
+      `Failed to get QStash credentials: ${error instanceof Error ? error.message : String(error)}`
     );
   }
 }
 
-/**
- * Creates a QStash client with automatically fetched token
- */
 export async function createQStashClientWithToken(
   creds: {
     url?: string;
@@ -38,7 +30,9 @@ export async function createQStashClientWithToken(
   } = {}
 ): Promise<HttpClient> {
   if (!creds?.token) {
-    creds.token = await getQStashToken();
+    const fetched = await getQStashCredentials();
+    creds.token = fetched.token;
+    creds.url ??= fetched.url;
   }
   return createQStashClient({
     url: creds?.url,
@@ -46,10 +40,7 @@ export async function createQStashClientWithToken(
   });
 }
 
-/**
- * Clears the cached token (useful for testing or when token becomes invalid)
- */
 export function clearTokenCache(): void {
-  cachedToken = null;
-  tokenExpiry = 0;
+  cachedCreds = null;
+  credsExpiry = 0;
 }

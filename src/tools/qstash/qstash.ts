@@ -1,7 +1,8 @@
 import { z } from "zod";
-import { json, tool } from "..";
+import { json, tool } from "../helpers";
 import { http } from "../../http";
 import { createQStashClientWithToken } from "./utils";
+import { qstashCreds } from "./creds";
 import type {
   QStashUser,
   QStashLogsResponse,
@@ -11,18 +12,7 @@ import type {
   QStashScheduleCreateResponse,
 } from "./types";
 
-export const qstashCreds = {
-  qstash_creds: z.undefined(),
-  // qstash_creds: z
-  //   .object({
-  //     url: z.string(),
-  //     token: z.string(),
-  //   })
-  //   .optional()
-  //   .describe(
-  //     "Optional qstash credentials. Use for local qstash connections and external qstash deployments"
-  //   ),
-};
+export { qstashCreds };
 
 // First, we need to get the QStash token
 export const qstashTools = {
@@ -31,7 +21,7 @@ export const qstashTools = {
     is not needed for the mcp tools since the token is automatically fetched from
     the Upstash API for them.`,
     handler: async () => {
-      const user = await http.get<QStashUser>("qstash/user");
+      const user = await http.get<QStashUser>("v2/qstash/user");
       return [json(user)];
     },
   }),

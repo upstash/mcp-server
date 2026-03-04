@@ -1,8 +1,8 @@
 import { z } from "zod";
-import { json, tool } from "..";
+import { json, tool } from "../helpers";
 import { createQStashClientWithToken } from "./utils";
 import type { WorkflowLogsResponse, WorkflowDLQResponse, WorkflowDLQMessage } from "./types";
-import { qstashCreds } from "./qstash";
+import { qstashCreds } from "./creds";
 
 export const workflowTools = {
   workflow_logs_list: tool({

@@ -15,24 +15,25 @@
     "url": "https://github.com/upstash/mcp-server/issues"
   },
   "scripts": {
-    "build": "tsup && node -e \"require('fs').chmodSync('dist/index.js', '755')\"",
-    "watch": "npm run build && tsup --watch",
+    "build": "tsup && bun -e \"require('fs').chmodSync('dist/index.js', '755')\"",
+    "watch": "bun run build && tsup --watch",
     "logs": "tail -n 20 -f ~/Library/Logs/Claude/mcp*.log",
     "fmt": "prettier --write .",
-    "test": "vitest",
+    "test": "bun test",
+    "test:qstash": "bun test ./qstash.test.ts",
     "lint": "eslint \"**/*.{js,ts,tsx}\" --quiet --fix && tsc --noEmit"
   },
   "files": [
     "dist"
   ],
   "devDependencies": {
+    "@types/bun": "^1.3.9",
     "@typescript-eslint/eslint-plugin": "8.4.0",
     "@typescript-eslint/parser": "8.4.0",
     "eslint": "9.10.0",
     "eslint-plugin-unicorn": "55.0.0",
     "prettier": "^3.6.2",
-    "tsup": "^8.5.0",
-    "vitest": "^3.2.4"
+    "tsup": "^8.5.0"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.17.5",
@@ -40,8 +41,6 @@
     "chalk": "^5.6.0",
     "commander": "^14.0.0",
     "dotenv": "^16.6.1",
-    "node-fetch": "^3.3.2",
-    "tsx": "^4.20.5",
     "zod": "^3.25.76",
     "zod-to-json-schema": "^3.24.6"
   }

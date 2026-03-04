@@ -1,9 +1,7 @@
 import { config } from "./config";
 import { log } from "./log";
 import { applyMiddlewares } from "./middlewares";
-import type { RequestInit } from "node-fetch";
-import fetch from "node-fetch";
-import { json } from "./tools";
+import { json } from "./tools/helpers";
 
 export type UpstashRequest = {
   method: string;
@@ -121,7 +119,7 @@ export class HttpClient {
         "Content-Type": "application/json",
         Authorization: authHeader,
         ...req.headers,
-      },
+      } as Record<string, string>,
     };
 
     if (req.method !== "GET" && req.body !== undefined) {

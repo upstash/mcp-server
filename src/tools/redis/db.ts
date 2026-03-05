@@ -213,6 +213,7 @@ const parseUsageData = (data: UsageData) => {
   if (!Array.isArray(data)) return "INVALID DATA";
   if (data.length === 0 || data.length === 1) return "NO DATA";
   const filteredData = data.filter((d) => d.x && d.y);
+  if (filteredData.length === 0) return "NO DATA";
   return {
     start: filteredData[0].x,
     // last one can be null, so use the second last

@@ -107,7 +107,7 @@ UPSTASH_API_KEY=<UPSTASH_API_KEY>
 To install the local MCP Server to Claude Code, run:
 
 ```bash
-claude mcp add --transport stdio upstash -- bun --watch dist/index.js
+claude mcp add --transport stdio upstash -- bun --watch dist/index.js --debug
 ```
 
 To view the logs from the MCP Server in real time, run:

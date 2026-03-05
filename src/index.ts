@@ -8,6 +8,7 @@ import { createServer, type IncomingMessage } from "http";
 import { createServerInstance } from "./server.js";
 import { config } from "./config";
 import { testConnection } from "./test-connection";
+import { initDebugLog } from "./log";
 import "dotenv/config";
 
 /**
@@ -44,6 +45,10 @@ const cliOptions = program.opts<{
 }>();
 
 export const DEBUG = cliOptions.debug ?? false;
+
+if (DEBUG) {
+  initDebugLog(new URL("../", import.meta.url).pathname);
+}
 
 // Validate transport option
 const allowedTransports = ["stdio", "http"];

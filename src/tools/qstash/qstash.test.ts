@@ -2,7 +2,10 @@
 
 import { describe, it, expect, beforeAll } from "bun:test";
 import { config } from "../../config";
+import type { CustomTool } from "../../tool";
 import { qstashTools } from "./qstash";
+
+const tools = qstashTools as Record<string, CustomTool<any>>;
 
 beforeAll(() => {
   const email = process.env.UPSTASH_EMAIL;
@@ -16,7 +19,7 @@ beforeAll(() => {
 
 describe("qstash_get_user_token", () => {
   it("returns the token from v2/qstash/user", async () => {
-    const result = await qstashTools.qstash_get_user_token.handler(undefined as never);
+    const result = await tools.qstash_get_user_token.handler({});
     const text = Array.isArray(result) ? result.join("") : String(result);
     expect(text).toContain("token");
   });
@@ -24,7 +27,7 @@ describe("qstash_get_user_token", () => {
 
 describe("qstash_schedules_list", () => {
   it("lists schedules and returns count", async () => {
-    const result = await qstashTools.qstash_schedules_list.handler({} as never);
+    const result = await tools.qstash_schedules_list.handler({});
     expect(Array.isArray(result)).toBe(true);
     const [summary] = result as string[];
     expect(summary).toMatch(/Found \d+ schedules/);
@@ -33,7 +36,7 @@ describe("qstash_schedules_list", () => {
 
 describe("qstash_logs_list", () => {
   it("lists logs and returns entries", async () => {
-    const result = await qstashTools.qstash_logs_list.handler({ count: 5 } as never);
+    const result = await tools.qstash_logs_list.handler({ count: 5 });
     expect(Array.isArray(result)).toBe(true);
     const [summary] = result as string[];
     expect(summary).toMatch(/Found \d+ log entries/);
@@ -42,11 +45,11 @@ describe("qstash_logs_list", () => {
 
 describe("qstash_publish_message", () => {
   it("publishes a message and returns a messageId", async () => {
-    const result = await qstashTools.qstash_publish_message.handler({
+    const result = await tools.qstash_publish_message.handler({
       destination: "https://httpbin.org/post",
       body: JSON.stringify({ test: true }),
       method: "POST",
-    } as never);
+    });
     expect(Array.isArray(result)).toBe(true);
     const text = (result as string[]).join("\n");
     expect(text).toContain("Message published successfully");

@@ -12,8 +12,6 @@ import type {
   QStashScheduleCreateResponse,
 } from "./types";
 
-export { qstashCreds };
-
 // First, we need to get the QStash token
 export const qstashTools = {
   qstash_get_user_token: tool({

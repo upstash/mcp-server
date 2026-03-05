@@ -29,6 +29,7 @@ const program = new Command()
   .option("--email <email>", "Upstash email")
   .option("--api-key <key>", "Upstash API key")
   .option("--debug", "Enable debug mode")
+  .option("--disable-telemetry", "Disable telemetry headers sent to Upstash APIs")
   .allowUnknownOption(); // let other wrappers pass through extra flags
 
 program.parse(argv, { from: "user" });
@@ -39,6 +40,7 @@ const cliOptions = program.opts<{
   email?: string;
   apiKey?: string;
   debug?: boolean;
+  disableTelemetry?: boolean;
 }>();
 
 export const DEBUG = cliOptions.debug ?? false;
@@ -84,6 +86,7 @@ async function main() {
   // Set config
   config.email = email;
   config.apiKey = apiKey;
+  config.disableTelemetry = cliOptions.disableTelemetry ?? false;
 
   // Test connection
   await testConnection();

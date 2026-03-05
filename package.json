@@ -21,7 +21,8 @@
     "fmt": "prettier --write .",
     "test": "bun test",
     "test:qstash": "bun test ./qstash.test.ts",
-    "lint": "eslint \"**/*.{js,ts,tsx}\" --quiet --fix && tsc --noEmit"
+    "lint": "eslint \"**/*.{js,ts,tsx}\" --quiet --fix && tsc --noEmit",
+    "prepare": "husky"
   },
   "files": [
     "dist"
@@ -32,8 +33,19 @@
     "@typescript-eslint/parser": "8.4.0",
     "eslint": "9.10.0",
     "eslint-plugin-unicorn": "55.0.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.3.2",
     "prettier": "^3.6.2",
     "tsup": "^8.5.0"
+  },
+  "lint-staged": {
+    "*.{js,ts,tsx}": [
+      "prettier --write",
+      "eslint --quiet --fix"
+    ],
+    "*.{json,md,yaml,yml}": [
+      "prettier --write"
+    ]
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.17.5",

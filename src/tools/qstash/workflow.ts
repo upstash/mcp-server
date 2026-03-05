@@ -2,7 +2,7 @@ import { z } from "zod";
 import { json, tool } from "../helpers";
 import { createQStashClientWithToken } from "./utils";
 import type { WorkflowLogsResponse, WorkflowDLQResponse, WorkflowDLQMessage } from "./types";
-import { qstashCreds } from "./creds";
+import { qstashCommon } from "./common";
 
 export const workflowTools = {
   workflow_logs_list: tool({
@@ -20,10 +20,10 @@ export const workflowTools = {
         .number()
         .optional()
         .describe("Filter by workflow creation timestamp (Unix timestamp)"),
-      ...qstashCreds,
+      ...qstashCommon,
     }),
     handler: async (params) => {
-      const client = await createQStashClientWithToken(params.qstash_creds);
+      const client = await createQStashClientWithToken(params);
 
       const response = await client.get<WorkflowLogsResponse>("v2/workflows/events", {
         trimBody: 0,
@@ -56,10 +56,10 @@ export const workflowTools = {
         .number()
         .optional()
         .describe("The workflow creation timestamp (Unix timestamp)"),
-      ...qstashCreds,
+      ...qstashCommon,
     }),
     handler: async (params) => {
-      const client = await createQStashClientWithToken(params.qstash_creds);
+      const client = await createQStashClientWithToken(params);
       const response = await client.get<WorkflowLogsResponse>("v2/workflows/logs", {
         ...params,
       });
@@ -88,10 +88,10 @@ export const workflowTools = {
       callerIP: z.string().optional().describe("Filter by IP address of the caller"),
       failureCallbackState: z.string().optional().describe("Filter by failure callback state"),
       count: z.number().optional().describe("Number of DLQ messages to return"),
-      ...qstashCreds,
+      ...qstashCommon,
     }),
     handler: async (params) => {
-      const client = await createQStashClientWithToken(params.qstash_creds);
+      const client = await createQStashClientWithToken(params);
 
       const response = await client.get<WorkflowDLQResponse>("v2/workflows/dlq", {
         ...params,
@@ -117,10 +117,10 @@ export const workflowTools = {
     description: `Get details of a single failed workflow run from the DLQ by DLQ ID.`,
     inputSchema: z.object({
       dlqId: z.string().describe("The DLQ ID of the failed workflow run to retrieve"),
-      ...qstashCreds,
+      ...qstashCommon,
     }),
     handler: async (params) => {
-      const client = await createQStashClientWithToken(params.qstash_creds);
+      const client = await createQStashClientWithToken(params);
       const message = await client.get<WorkflowDLQMessage>(`v2/workflows/dlq/${params.dlqId}`);
 
       return [`Failed workflow run details for DLQ ID: ${params.dlqId}`, json(message)];
@@ -136,10 +136,11 @@ export const workflowTools = {
         .describe(
           "The action to perform: delete (remove from DLQ), restart (from beginning), or resume (from the failed step)"
         ),
-      ...qstashCreds,
+      ...qstashCommon,
     }),
-    handler: async ({ dlqId, action, qstash_creds }) => {
-      const client = await createQStashClientWithToken(qstash_creds);
+    handler: async (params) => {
+      const { dlqId, action } = params;
+      const client = await createQStashClientWithToken(params);
 
       switch (action) {
         case "delete": {

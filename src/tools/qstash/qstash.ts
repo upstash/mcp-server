@@ -2,7 +2,7 @@ import { z } from "zod";
 import { json, tool } from "../helpers";
 import { http } from "../../http";
 import { createQStashClientWithToken } from "./utils";
-import { qstashCreds } from "./creds";
+import { qstashCommon } from "./common";
 import type {
   QStashUser,
   QStashLogsResponse,
@@ -77,23 +77,11 @@ export const qstashTools = {
         .describe("Flow control for rate limiting and parallelism management"),
 
       extraHeaders: z.record(z.string()).optional().describe("Extra headers to add to the request"),
-      ...qstashCreds,
+      ...qstashCommon,
     }),
-    handler: async ({
-      destination,
-      body,
-      method,
-      extraHeaders,
-      delay,
-      retries,
-      callback,
-      failureCallback,
-      timeout,
-      queueName,
-      flow_control,
-      qstash_creds,
-    }) => {
-      const client = await createQStashClientWithToken(qstash_creds);
+    handler: async (params) => {
+      const { destination, body, method, extraHeaders, delay, retries, callback, failureCallback, timeout, queueName, flow_control } = params;
+      const client = await createQStashClientWithToken(params);
 
       const requestHeaders: Record<string, string> = {};
 
@@ -187,10 +175,10 @@ export const qstashTools = {
         .optional()
         .describe("Filter logs to date (Unix timestamp in milliseconds)"),
       count: z.number().max(1000).optional().describe("Number of logs to return (max 1000)"),
-      ...qstashCreds,
+      ...qstashCommon,
     }),
     handler: async (params) => {
-      const client = await createQStashClientWithToken(params.qstash_creds);
+      const client = await createQStashClientWithToken(params);
 
       const response = await client.get<QStashLogsResponse>("v2/logs", {
         trimBody: 0,
@@ -223,10 +211,11 @@ export const qstashTools = {
     description: `Get details of a single QStash log item by message ID without trimming the body.`,
     inputSchema: z.object({
       messageId: z.string().describe("The message ID to get details for"),
-      ...qstashCreds,
+      ...qstashCommon,
     }),
-    handler: async ({ messageId, qstash_creds }) => {
-      const client = await createQStashClientWithToken(qstash_creds);
+    handler: async (params) => {
+      const { messageId } = params;
+      const client = await createQStashClientWithToken(params);
       const response = await client.get<QStashLogsResponse>("v2/logs", { messageId });
 
       if (response.messages.length === 0) {
@@ -252,10 +241,10 @@ export const qstashTools = {
       responseStatus: z.number().optional().describe("Filter by HTTP response status code"),
       callerIp: z.string().optional().describe("Filter by IP address of the publisher"),
       count: z.number().max(100).optional().describe("Number of messages to return (max 100)"),
-      ...qstashCreds,
+      ...qstashCommon,
     }),
     handler: async (params) => {
-      const client = await createQStashClientWithToken(params.qstash_creds);
+      const client = await createQStashClientWithToken(params);
 
       const response = await client.get<QStashDLQResponse>("v2/dlq", {
         trimBody: 0,
@@ -274,10 +263,11 @@ export const qstashTools = {
     description: `Get details of a single DLQ message by DLQ ID.`,
     inputSchema: z.object({
       dlqId: z.string().describe("The DLQ ID of the message to retrieve"),
-      ...qstashCreds,
+      ...qstashCommon,
     }),
-    handler: async ({ dlqId, qstash_creds }) => {
-      const client = await createQStashClientWithToken(qstash_creds);
+    handler: async (params) => {
+      const { dlqId } = params;
+      const client = await createQStashClientWithToken(params);
       const message = await client.get<QStashDLQMessage>(`v2/dlq/${dlqId}`);
 
       return [`DLQ message details for ID: ${dlqId}`, json(message)];
@@ -286,8 +276,11 @@ export const qstashTools = {
 
   qstash_schedules_list: tool({
     description: `List all QStash schedules.`,
-    handler: async ({ qstash_creds }) => {
-      const client = await createQStashClientWithToken(qstash_creds);
+    inputSchema: z.object({
+      ...qstashCommon,
+    }),
+    handler: async (params) => {
+      const client = await createQStashClientWithToken(params);
       const schedules = await client.get<QStashSchedule[]>("v2/schedules");
 
       return [`Found ${schedules.length} schedules`, json(schedules)];
@@ -324,25 +317,11 @@ export const qstashTools = {
       failureCallback: z.string().optional().describe("Callback URL for failed delivery"),
       timeout: z.string().optional().describe("Request timeout (e.g., '30s')"),
       queueName: z.string().optional().describe("Queue name to use"),
-      ...qstashCreds,
+      ...qstashCommon,
     }),
-    handler: async ({
-      operation,
-      scheduleId,
-      destination,
-      cron,
-      method = "POST",
-      headers,
-      body,
-      delay,
-      retries,
-      callback,
-      failureCallback,
-      timeout,
-      queueName,
-      qstash_creds,
-    }) => {
-      const client = await createQStashClientWithToken(qstash_creds);
+    handler: async (params) => {
+      const { operation, scheduleId, destination, cron, method = "POST", headers, body, delay, retries, callback, failureCallback, timeout, queueName } = params;
+      const client = await createQStashClientWithToken(params);
 
       switch (operation) {
         case "create":

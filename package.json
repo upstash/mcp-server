@@ -17,7 +17,7 @@
   "scripts": {
     "build": "tsup && bun -e \"require('fs').chmodSync('dist/index.js', '755')\"",
     "watch": "bun run build && tsup --watch",
-    "logs": "tail -n 20 -f ~/Library/Logs/Claude/mcp*.log",
+    "logs": "tail -n 20 -f ~/.claude/debug/latest",
     "fmt": "prettier --write .",
     "test": "bun test",
     "test:qstash": "bun test ./qstash.test.ts",

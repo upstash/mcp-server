@@ -78,6 +78,10 @@ And configure your MCP client to use the HTTP transport:
 }
 ```
 
+## Telemetry
+
+The server sends anonymous runtime/platform info to Upstash with each request. To opt out, add `--disable-telemetry` to your args.
+
 ## Troubleshooting
 
 See the [troubleshooting guide](https://modelcontextprotocol.io/quickstart#troubleshooting) in the official MCP documentation. You can also reach out to us at [Discord](https://discord.com/invite/w9SenAtbme) for support.

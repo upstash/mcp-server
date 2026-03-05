@@ -7,7 +7,6 @@ on:
         type: boolean
         required: true
 
-
 jobs:
   release:
     name: Release

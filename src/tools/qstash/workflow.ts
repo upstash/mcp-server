@@ -23,12 +23,18 @@ export const workflowTools = {
       ...qstashCommon,
     }),
     handler: async (params) => {
+      const {
+        region: _region,
+        local_mode_port: _local_mode_port,
+        qstash_creds: _qstash_creds,
+        ...query
+      } = params;
       const client = await createQStashClientWithToken(params);
 
       const response = await client.get<WorkflowLogsResponse>("v2/workflows/events", {
         trimBody: 0,
         groupBy: "workflowRunId",
-        ...params,
+        ...query,
       });
 
       const cleaned = response.runs.map((run) =>
@@ -59,10 +65,14 @@ export const workflowTools = {
       ...qstashCommon,
     }),
     handler: async (params) => {
+      const {
+        region: _region,
+        local_mode_port: _local_mode_port,
+        qstash_creds: _qstash_creds,
+        ...query
+      } = params;
       const client = await createQStashClientWithToken(params);
-      const response = await client.get<WorkflowLogsResponse>("v2/workflows/logs", {
-        ...params,
-      });
+      const response = await client.get<WorkflowLogsResponse>("v2/workflows/logs", query);
 
       if (response.runs.length === 0) {
         return "No workflow run found";
@@ -91,10 +101,16 @@ export const workflowTools = {
       ...qstashCommon,
     }),
     handler: async (params) => {
+      const {
+        region: _region,
+        local_mode_port: _local_mode_port,
+        qstash_creds: _qstash_creds,
+        ...query
+      } = params;
       const client = await createQStashClientWithToken(params);
 
       const response = await client.get<WorkflowDLQResponse>("v2/workflows/dlq", {
-        ...params,
+        ...query,
         trimBody: 0,
       });
 

@@ -2,6 +2,7 @@
 
 export interface QStashUser {
   token: string;
+  region: string;
 }
 
 export interface QStashLog {

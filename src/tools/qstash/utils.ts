@@ -9,26 +9,35 @@ const REGION_URLS: Record<string, string> = {
   us: "https://qstash-us-east-1.upstash.io",
 };
 
-let cachedCreds: { token: string } | null = null;
-let credsExpiry: number = 0;
+const REGION_API_NAMES: Record<string, string> = {
+  eu: "eu-central-1",
+  us: "us-east-1",
+};
 
-export async function getQStashCredentials(): Promise<{ token: string }> {
+let cachedUsers: QStashUser[] | null = null;
+let cacheExpiry: number = 0;
+
+export async function getQStashCredentials(region: string): Promise<{ token: string }> {
   const now = Date.now();
 
-  if (cachedCreds && now < credsExpiry) {
-    return cachedCreds;
+  if (!cachedUsers || now >= cacheExpiry) {
+    try {
+      cachedUsers = await http.get<QStashUser[]>("v2/qstash/users");
+      cacheExpiry = now + 60 * 1000;
+    } catch (error) {
+      throw new Error(
+        `Failed to get QStash credentials: ${error instanceof Error ? error.message : String(error)}`
+      );
+    }
   }
 
-  try {
-    const user = await http.get<QStashUser>("v2/qstash/user");
-    cachedCreds = { token: user.token };
-    credsExpiry = now + 60 * 60 * 1000;
-    return cachedCreds;
-  } catch (error) {
-    throw new Error(
-      `Failed to get QStash credentials: ${error instanceof Error ? error.message : String(error)}`
-    );
+  const apiRegion = REGION_API_NAMES[region] ?? REGION_API_NAMES["eu"];
+  const match = cachedUsers.find((u) => u.region === apiRegion);
+  if (!match) {
+    throw new Error(`No QStash user found for region '${region}' (${apiRegion})`);
   }
+
+  return { token: match.token };
 }
 
 export async function createQStashClientWithToken(options: {
@@ -49,12 +58,12 @@ export async function createQStashClientWithToken(options: {
     });
   }
 
-  const fetched = await getQStashCredentials();
-  const url = region && REGION_URLS[region] ? REGION_URLS[region] : REGION_URLS["eu"];
-  return createQStashClient({ url, token: fetched.token });
+  const effectiveRegion = region && REGION_URLS[region] ? region : "eu";
+  const fetched = await getQStashCredentials(effectiveRegion);
+  return createQStashClient({ url: REGION_URLS[effectiveRegion], token: fetched.token });
 }
 
 export function clearTokenCache(): void {
-  cachedCreds = null;
-  credsExpiry = 0;
+  cachedUsers = null;
+  cacheExpiry = 0;
 }

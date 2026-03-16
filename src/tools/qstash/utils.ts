@@ -43,9 +43,8 @@ export async function createQStashClientWithToken(options: {
   }
 
   if (region === "local") {
-    const port = local_mode_port ?? 8080;
     return createQStashClient({
-      url: `http://localhost:${port}`,
+      url: `http://localhost:${local_mode_port}`,
       token: LOCAL_QSTASH_TOKEN,
     });
   }

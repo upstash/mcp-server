@@ -7,7 +7,7 @@ export const qstashCommon = {
     .describe("QStash region to use. To use local mode, pick `local`"),
   local_mode_port: z
     .number()
-    .default(6488)
+    .default(8080)
     .describe(
       "Only provide when using local mode and if default does not work, the port is usually in the .env file"
     ),

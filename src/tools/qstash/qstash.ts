@@ -80,7 +80,19 @@ export const qstashTools = {
       ...qstashCommon,
     }),
     handler: async (params) => {
-      const { destination, body, method, extraHeaders, delay, retries, callback, failureCallback, timeout, queueName, flow_control } = params;
+      const {
+        destination,
+        body,
+        method,
+        extraHeaders,
+        delay,
+        retries,
+        callback,
+        failureCallback,
+        timeout,
+        queueName,
+        flow_control,
+      } = params;
       const client = await createQStashClientWithToken(params);
 
       const requestHeaders: Record<string, string> = {};
@@ -178,12 +190,18 @@ export const qstashTools = {
       ...qstashCommon,
     }),
     handler: async (params) => {
+      const {
+        region: _region,
+        local_mode_port: _local_mode_port,
+        qstash_creds: _qstash_creds,
+        ...query
+      } = params;
       const client = await createQStashClientWithToken(params);
 
       const response = await client.get<QStashLogsResponse>("v2/logs", {
         trimBody: 0,
         groupBy: "messageId",
-        ...params,
+        ...query,
       });
       const firstMessageFields = Object.fromEntries(
         Object.entries(response.messages[0] ?? {}).filter(
@@ -244,11 +262,17 @@ export const qstashTools = {
       ...qstashCommon,
     }),
     handler: async (params) => {
+      const {
+        region: _region,
+        local_mode_port: _local_mode_port,
+        qstash_creds: _qstash_creds,
+        ...query
+      } = params;
       const client = await createQStashClientWithToken(params);
 
       const response = await client.get<QStashDLQResponse>("v2/dlq", {
         trimBody: 0,
-        ...params,
+        ...query,
       });
 
       return [
@@ -320,7 +344,21 @@ export const qstashTools = {
       ...qstashCommon,
     }),
     handler: async (params) => {
-      const { operation, scheduleId, destination, cron, method = "POST", headers, body, delay, retries, callback, failureCallback, timeout, queueName } = params;
+      const {
+        operation,
+        scheduleId,
+        destination,
+        cron,
+        method = "POST",
+        headers,
+        body,
+        delay,
+        retries,
+        callback,
+        failureCallback,
+        timeout,
+        queueName,
+      } = params;
       const client = await createQStashClientWithToken(params);
 
       switch (operation) {

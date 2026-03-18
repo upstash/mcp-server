@@ -1,11 +1,13 @@
 name: Release
 
 on:
-  workflow_call:
-    inputs:
-      prerelease:
-        type: boolean
-        required: true
+  release:
+    types:
+      - published
+
+permissions:
+  id-token: write
+  contents: read
 
 jobs:
   release:

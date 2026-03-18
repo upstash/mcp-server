@@ -8,6 +8,7 @@ import { createServer, type IncomingMessage } from "http";
 import { createServerInstance } from "./server.js";
 import { config } from "./config";
 import { testConnection } from "./test-connection";
+import { initDebugLog } from "./log";
 import "dotenv/config";
 
 /**
@@ -29,6 +30,7 @@ const program = new Command()
   .option("--email <email>", "Upstash email")
   .option("--api-key <key>", "Upstash API key")
   .option("--debug", "Enable debug mode")
+  .option("--disable-telemetry", "Disable telemetry headers sent to Upstash APIs")
   .allowUnknownOption(); // let other wrappers pass through extra flags
 
 program.parse(argv, { from: "user" });
@@ -39,9 +41,14 @@ const cliOptions = program.opts<{
   email?: string;
   apiKey?: string;
   debug?: boolean;
+  disableTelemetry?: boolean;
 }>();
 
 export const DEBUG = cliOptions.debug ?? false;
+
+if (DEBUG) {
+  initDebugLog(new URL("../", import.meta.url).pathname);
+}
 
 // Validate transport option
 const allowedTransports = ["stdio", "http"];
@@ -84,6 +91,7 @@ async function main() {
   // Set config
   config.email = email;
   config.apiKey = apiKey;
+  config.disableTelemetry = cliOptions.disableTelemetry ?? false;
 
   // Test connection
   await testConnection();

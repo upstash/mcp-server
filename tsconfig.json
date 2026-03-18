@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "lib": ["ES2019"],
+    "lib": ["ES2019", "DOM"],
     "module": "esnext",
     "target": "ES2019",
     "moduleResolution": "bundler",

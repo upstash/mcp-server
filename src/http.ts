@@ -1,9 +1,8 @@
 import { config } from "./config";
 import { log } from "./log";
 import { applyMiddlewares } from "./middlewares";
-import type { RequestInit } from "node-fetch";
-import fetch from "node-fetch";
-import { json } from "./tools";
+import { json } from "./tools/helpers";
+import { telemetry } from "./telemetry";
 
 export type UpstashRequest = {
   method: string;
@@ -115,13 +114,22 @@ export class HttpClient {
       authHeader = `Basic ${Buffer.from(token).toString("base64")}`;
     }
 
+    const telemetryHeaders: Record<string, string> = config.disableTelemetry
+      ? {}
+      : {
+          "Upstash-Telemetry-Runtime": telemetry.runtime,
+          "Upstash-Telemetry-Platform": telemetry.platform,
+          "Upstash-Telemetry-Sdk": telemetry.sdk,
+        };
+
     const init: RequestInit = {
       method: req.method,
       headers: {
         "Content-Type": "application/json",
         Authorization: authHeader,
+        ...telemetryHeaders,
         ...req.headers,
-      },
+      } as Record<string, string>,
     };
 
     if (req.method !== "GET" && req.body !== undefined) {

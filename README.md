@@ -1,21 +1,27 @@
-# Upstash MCP Server
-
-[![Install MCP Server](https://cursor.com/deeplink/mcp-install-dark.svg)](https://cursor.com/en/install-mcp?name=upstash&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIkB1cHN0YXNoL21jcC1zZXJ2ZXJAbGF0ZXN0IiwiLS1lbWFpbCIsIllPVVJfRU1BSUwiLCItLWFwaS1rZXkiLCJZT1VSX0FQSV9LRVkiXX0=%3D)
+# Upstash MCP
 
 [![Install MCP Server](https://cursor.com/deeplink/mcp-install-dark.svg)](https://cursor.com/en/install-mcp?name=upstash&config=eyJjb21tYW5kIjoibnB4IC15IEB1cHN0YXNoL21jcC1zZXJ2ZXJAbGF0ZXN0IC0tZW1haWwgWU9VUl9FTUFJTCAtLWFwaS1rZXkgWU9VUl9BUElfS0VZIn0%3D)
+
 [<img alt="Install in VS Code (npx)" src="https://img.shields.io/badge/Install%20in%20VS%20Code-0098FF?style=for-the-badge&logo=visualstudiocode&logoColor=white">](https://insiders.vscode.dev/redirect?url=vscode%3Amcp%2Finstall%3F%7B%22name%22%3A%22upstash-mcp%22%2C%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22%40upstash%2Fmcp-server%40latest%22%2C%22--email%22%2C%22YOUR_EMAIL%22%2C%22--api-key%22%2C%22YOUR_API_KEY%22%5D%7D)
 
 [![smithery badge](https://smithery.ai/badge/@upstash/mcp-server)](https://smithery.ai/server/@upstash/mcp-server)
 
-Model Context Protocol (MCP) is a [new, standardized protocol](https://modelcontextprotocol.io/introduction) for managing context between large language models (LLMs) and external systems. In this repository, we provide an installer as well as an MCP Server for [Upstash Developer API's](https://upstash.com/docs/devops/developer-api).
+The Upstash MCP gives your agent the ability to interact with your Upstash account, such as:
 
-This allows you to use any MCP Client to interact with your Upstash account using natural language, e.g.:
+### Redis
 
-- "Create a new Redis database in us-east-1"
-- "List my databases"
-- "List keys starting with "user:" in users-db"
-- "Create a backup"
+- "Create a new Redis in us-east-1"
+- "List my databases that have high memory usage"
+- "Give me the schema of how users are stored in redis"
+- "Create a backup and clear db"
 - "Give me the spikes in throughput during the last 7 days"
+
+### QStash & Workflow
+
+- "Check the logs and figure out what is wrong"
+- "Find me failed workflows of user @ysfk_0x"
+- "Restart the failed workflow run started in last 2 hours"
+- "Check DLQ and give me a summary"
 
 # Usage
 
@@ -46,7 +52,13 @@ Add this to your MCP client configuration:
 }
 ```
 
-**Streamable HTTP Transport (for web applications):**
+### Claude Code
+
+```bash
+claude mcp add --transport stdio upstash -- npx -y @upstash/mcp-server@latest --email YOUR_EMAIL --api-key YOUR_API_KEY
+```
+
+### Streamable HTTP Transport (for web applications)
 
 Start your MCP server with the `http` transport:
 
@@ -66,114 +78,21 @@ And configure your MCP client to use the HTTP transport:
 }
 ```
 
-<details>
-<summary><strong>Docker Setup</strong></summary>
+## Telemetry
 
-1. **Create a Dockerfile:**
+The server sends anonymous runtime/platform info to Upstash with each request. To opt out, add `--disable-telemetry` to your args.
 
-   <summary>Click to see Dockerfile content</summary>
+## Troubleshooting
 
-   ```Dockerfile
-   FROM node:18-alpine
-
-   WORKDIR /app
-
-   # Install the latest version globally
-   RUN npm install -g @upstash/mcp-server
-
-   # Expose default port if needed (optional, depends on MCP client interaction)
-   # EXPOSE 3000
-
-   # Default command to run the server
-   CMD ["upstash-mcp-server"]
-   ```
-
-   </details>
-
-   Then, build the image using a tag (e.g., `upstash-mcp`). **Make sure Docker Desktop (or the Docker daemon) is running.** Run the following command in the same directory where you saved the `Dockerfile`:
-
-   ```bash
-   docker build -t upstash-mcp .
-   ```
-
-2. **Configure Your MCP Client:**
-
-   Update your MCP client's configuration to use the Docker command.
-
-   _Example for a claude_desktop_config.json:_
-
-   ```json
-   {
-     "mcpServers": {
-       "upstash": {
-         "command": "docker",
-         "args": [
-           "run",
-           "-i",
-           "--rm",
-           "-e",
-           "UPSTASH_EMAIL=YOUR_EMAIL",
-           "-e",
-           "UPSTASH_API_KEY=YOUR_API_KEY",
-           "upstash-mcp"
-         ]
-       }
-     }
-   }
-   ```
-
-   _Note: This is an example configuration. Please refer to the specific examples for your MCP client (like Cursor, VS Code, etc.) earlier in this README to adapt the structure (e.g., `mcpServers` vs `servers`). Also, ensure the image name in `args` matches the tag used during the `docker build` command._
-
-</details>
-
-## Requirements
-
-- Node.js >= v18.0.0
-- [Upstash API key](https://upstash.com/docs/devops/developer-api) - You can create one from [here](https://console.upstash.com/account/api).
-
-### Troubleshooting
-
-#### Common Issues
-
-Your mcp client might have trouble finding the right binaries because of the differences between your shell and system `PATH`.
-
-To fix this, you can get the full path of the binaries by running `which npx` or `which docker` in your shell, and replace the `npx` or `docker` command in the MCP config with the full binary path.
-
-#### Node Version Manager
-
-If you are using a node version manager like nvm or fnm, please check [this issue](https://github.com/modelcontextprotocol/servers/issues/64#issuecomment-2530337743). You should change the `node` command in the MCP config to the absolute path of the node binary.
-
-#### Additional Troubleshooting
-
-See the [troubleshooting guide](https://modelcontextprotocol.io/quickstart#troubleshooting) in the MCP documentation. You can also reach out to us at [Discord](https://discord.com/invite/w9SenAtbme).
-
-## Tools
-
-### Redis
-
-- `redis_database_create_backup`
-- `redis_database_create_new`
-- `redis_database_delete`
-- `redis_database_delete_backup`
-- `redis_database_get_details`
-- `redis_database_list_backups`
-- `redis_database_list_databases`
-- `redis_database_reset_password`
-- `redis_database_restore_backup`
-- `redis_database_run_multiple_redis_commands`
-- `redis_database_run_single_redis_command`
-- `redis_database_set_daily_backup`
-- `redis_database_update_regions`
-- `redis_database_get_usage_last_5_days`
-- `redis_database_get_stats`
+See the [troubleshooting guide](https://modelcontextprotocol.io/quickstart#troubleshooting) in the official MCP documentation. You can also reach out to us at [Discord](https://discord.com/invite/w9SenAtbme) for support.
 
 ## Development
 
 Clone the project and run:
 
 ```bash
-pnpm install
-pnpm run watch
+bun i
+bun run watch
 ```
 
 This will continuously build the project and watch for changes.
@@ -185,36 +104,14 @@ UPSTASH_EMAIL=<UPSTASH_EMAIL>
 UPSTASH_API_KEY=<UPSTASH_API_KEY>
 ```
 
-This will be used for setting the Claude config.
-
-### Testing with Claude Desktop
-
-To install the Claude Desktop config for local development, add the following to your Claude Desktop MCP config:
-
-```json
-{
-  "mcpServers": {
-    "upstash": {
-      "command": "node",
-      "args": [
-        "<path-to-repo>/dist/index.js",
-        "run",
-        "--email",
-        "<UPSTASH_EMAIL>",
-        "--api-key",
-        "<UPSTASH_API_KEY>"
-      ]
-    }
-  }
-}
-```
-
-> NOTE: The same issue with node version manager applies here. Please look at the note in the usage section if you are using a node version manager.
-
-You can now use Claude Desktop to run Upstash commands.
-
-To view the logs from the MCP Server in real time, run the following command:
+To install the local MCP Server to Claude Code, run:
 
 ```bash
-pnpm run logs
+claude mcp add --transport stdio upstash -- bun --watch dist/index.js --debug
+```
+
+To view the logs from the MCP Server in real time, run:
+
+```bash
+bun run logs
 ```

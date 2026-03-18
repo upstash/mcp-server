@@ -1,13 +1,8 @@
 // QStash API Types
 
 export interface QStashUser {
-  email: string;
-  maxDailyRequests: number;
-  maxBurstRequests: number;
-  currentDailyRequestCount: number;
-  currentBurstRequestCount: number;
   token: string;
-  url: string;
+  region: string;
 }
 
 export interface QStashLog {

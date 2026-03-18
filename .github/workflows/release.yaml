@@ -5,47 +5,53 @@ on:
     types:
       - published
 
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   release:
     name: Release
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set env
         run: echo "VERSION=${GITHUB_REF#refs/*/}" >> $GITHUB_ENV
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10
-          run_install: false
-      
-      - name: Install Node.js
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: 'pnpm'
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
 
       - name: Set package version
-        run: echo $(jq --arg v "${{ env.VERSION }}" '(.version) = $v' package.json) > package.json
+        run: |
+          echo $(jq --arg v "${{ env.VERSION }}" '(.version) = $v' package.json) > package.json
+          echo "export const VERSION='${{ env.VERSION }}'" > ./src/version.ts
 
       - name: Install Dependencies
-        run: pnpm install
+        run: bun install
 
       - name: Build
-        run: pnpm run build
-
-      - name: Set NPM_TOKEN
-        run: npm set "//registry.npmjs.org/:_authToken" ${{ secrets.NPM_TOKEN }}
+        run: bun run build
 
       - name: Publish
-        if: "!github.event.release.prerelease"
+        if: ${{ !inputs.prerelease }}
+        # working-directory: ./dist
         run: |
-          npm publish --access public
+          npm pkg delete scripts.prepare
+          npm publish --provenance --access public
 
       - name: Publish release candidate
-        if: "github.event.release.prerelease"
+        if: ${{ inputs.prerelease }}
+        # working-directory: ./dist
         run: |
-          npm publish --access public --tag=canary
+          npm pkg delete scripts.prepare
+          npm publish --provenance --access public --tag=canary

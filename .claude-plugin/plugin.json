@@ -1,0 +1,27 @@
+{
+  "name": "upstash-mcp",
+  "description": "MCP server for managing & debugging Upstash Redis, QStash, Workflow and Box",
+  "author": {
+    "name": "Upstash",
+    "email": "support@upstash.com"
+  },
+  "homepage": "https://upstash.com",
+  "repository": "https://github.com/upstash/mcp-server",
+  "license": "MIT",
+  "keywords": ["upstash", "redis", "qstash", "workflow", "database", "serverless"],
+  "category": "integration",
+  "userConfig": {
+    "email": {
+      "title": "Email",
+      "description": "Your Upstash account email",
+      "type": "string",
+      "sensitive": false
+    },
+    "api_key": {
+      "title": "API Key",
+      "description": "Your Upstash API key (from console.upstash.com/account/api)",
+      "type": "string",
+      "sensitive": true
+    }
+  }
+}

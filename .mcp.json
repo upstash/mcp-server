@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "upstash": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@upstash/mcp-server@latest",
+        "--email",
+        "${user_config.email}",
+        "--api-key",
+        "${user_config.api_key}"
+      ]
+    }
+  }
+}

@@ -54,6 +54,7 @@ afterAll(async () => {
               box_id: box.id,
               box_api_key: boxApiKey,
             });
+            // eslint-disable-next-line no-console
             console.log(`Cleanup: deleted box ${box.id} (${box.name})`);
           } catch {
             // ignore cleanup errors
@@ -74,6 +75,7 @@ afterAll(async () => {
         snapshot_id: createdSnapshotId,
         box_api_key: boxApiKey,
       });
+      // eslint-disable-next-line no-console
       console.log(`Cleanup: deleted snapshot ${createdSnapshotId}`);
     } catch {
       // ignore
@@ -198,6 +200,7 @@ describe("box_runs", () => {
       const runsJson = listText.replace(/^Found \d+ runs/, "").trim();
       const runs = JSON.parse(runsJson || "[]");
       if (runs.length === 0) {
+        // eslint-disable-next-line no-console
         console.log("No runs available to test get — skipping");
         return;
       }

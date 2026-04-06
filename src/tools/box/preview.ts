@@ -15,7 +15,7 @@ export const boxPreviewTool = {
       port: z
         .number()
         .min(1)
-        .max(65535)
+        .max(65_535)
         .optional()
         .describe("Port number (required for create and delete)"),
       basic_auth: z
@@ -71,8 +71,9 @@ export const boxPreviewTool = {
           return `Preview for port ${port} deleted successfully`;
         }
 
-        default:
+        default: {
           throw new Error(`Unknown action: ${action}`);
+        }
       }
     },
   }),

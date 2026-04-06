@@ -40,5 +40,6 @@ jobs:
         env:
           UPSTASH_EMAIL: ${{ secrets.UPSTASH_EMAIL }}
           UPSTASH_API_KEY: ${{ secrets.UPSTASH_API_KEY }}
+          UPSTASH_API_KEY_READONLY: ${{ secrets.UPSTASH_API_KEY_READONLY }}
           UPSTASH_BOX_API_KEY: ${{ secrets.UPSTASH_BOX_API_KEY }}
         run: bun test

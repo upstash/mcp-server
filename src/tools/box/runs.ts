@@ -47,8 +47,9 @@ export const boxRunsTool = {
           return `Run ${run_id} cancelled successfully`;
         }
 
-        default:
+        default: {
           throw new Error(`Unknown action: ${action}`);
+        }
       }
     },
   }),

@@ -139,8 +139,9 @@ export const boxManageTool = {
           ];
         }
 
-        default:
+        default: {
           throw new Error(`Unknown action: ${action}`);
+        }
       }
     },
   }),

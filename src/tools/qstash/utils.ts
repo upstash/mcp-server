@@ -1,3 +1,4 @@
+import { config } from "../../config";
 import { http, createQStashClient, type HttpClient } from "../../http";
 import type { QStashUser } from "./types";
 
@@ -45,6 +46,12 @@ export async function createQStashClientWithToken(options: {
   region: string;
   local_mode_port: number;
 }): Promise<HttpClient> {
+  if (config.readonly) {
+    throw new Error(
+      "QStash is not available in readonly mode yet. This feature will be implemented in the near future."
+    );
+  }
+
   const { qstash_creds, region, local_mode_port } = options;
 
   if (qstash_creds) {

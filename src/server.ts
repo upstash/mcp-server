@@ -1,4 +1,5 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { config } from "./config";
 import { log } from "./log";
 import { tools } from "./tools";
 import { handlerResponseToCallResult } from "./tool";
@@ -17,7 +18,11 @@ export function createServerInstance() {
     }
   );
 
-  const toolsList = Object.entries(tools).map(([name, tool]) => ({
+  const filteredTools = config.readonly
+    ? Object.fromEntries(Object.entries(tools).filter(([_, tool]) => tool.readonly))
+    : tools;
+
+  const toolsList = Object.entries(filteredTools).map(([name, tool]) => ({
     name,
     description: tool.description,
     inputSchema: tool.inputSchema,

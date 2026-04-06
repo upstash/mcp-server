@@ -116,8 +116,9 @@ export const boxSnapshotsTool = {
           ];
         }
 
-        default:
+        default: {
           throw new Error(`Unknown action: ${action}`);
+        }
       }
     },
   }),

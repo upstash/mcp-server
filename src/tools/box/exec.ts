@@ -2,7 +2,7 @@ import { z } from "zod";
 import { tool } from "../helpers";
 import { buildBoxCommon } from "./common";
 import { getBoxClient } from "./utils";
-import type { ExecResponse } from "./types";
+type ExecResponse = { exit_code: number; output?: string; error?: string };
 
 export const boxExecTool = {
   box_exec: tool({

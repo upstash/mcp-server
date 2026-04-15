@@ -2,7 +2,13 @@ import { z } from "zod";
 import { json, tool } from "../helpers";
 import { buildBoxCommon } from "./common";
 import { getBoxClient } from "./utils";
-import type { BoxPreview, CreatePreviewResponse } from "./types";
+type CreatePreviewResponse = {
+  url: string;
+  port: number;
+  username?: string;
+  password?: string;
+  token?: string;
+};
 
 export const boxPreviewTool = {
   box_preview: tool({
@@ -55,7 +61,7 @@ export const boxPreviewTool = {
         }
 
         case "list": {
-          const response = await client.get<{ previews: BoxPreview[] }>(`v2/box/${box_id}/preview`);
+          const response = await client.get<{ previews: unknown[] }>(`v2/box/${box_id}/preview`);
           const previews = response.previews ?? [];
           return [`Found ${previews.length} preview URLs`, json(previews)];
         }

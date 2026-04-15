@@ -2,7 +2,7 @@ import { z } from "zod";
 import { json, tool } from "../helpers";
 import { buildBoxCommon } from "./common";
 import { getBoxClient } from "./utils";
-import type { Box } from "./types";
+type BoxRef = { id: string; status: string };
 
 export const boxManageTool = {
   box_manage: tool({
@@ -79,7 +79,7 @@ export const boxManageTool = {
           if (params.ephemeral !== undefined) body.ephemeral = params.ephemeral;
           if (params.ttl !== undefined) body.ttl = params.ttl;
 
-          const box = await client.post<Box>("v2/box", body);
+          const box = await client.post<BoxRef>("v2/box", body);
           return [
             `Box created successfully (status: ${box.status})`,
             `Box ID: ${box.id}`,
@@ -90,13 +90,13 @@ export const boxManageTool = {
         case "list": {
           const query: Record<string, string | undefined> = {};
           if (params.status === "deleted") query.status = "deleted";
-          const boxes = await client.get<Box[]>("v2/box", query);
+          const boxes = await client.get<unknown[]>("v2/box", query);
           return [`Found ${boxes.length} boxes`, json(boxes)];
         }
 
         case "get": {
           if (!box_id) throw new Error("box_id is required for get action");
-          const box = await client.get<Box>(`v2/box/${box_id}`);
+          const box = await client.get<BoxRef>(`v2/box/${box_id}`);
           return [`Box ${box_id} (status: ${box.status})`, json(box)];
         }
 
@@ -120,7 +120,7 @@ export const boxManageTool = {
 
         case "fork": {
           if (!box_id) throw new Error("box_id is required for fork action");
-          const forked = await client.post<Box>(`v2/box/${box_id}/fork`);
+          const forked = await client.post<BoxRef>(`v2/box/${box_id}/fork`);
           return [`Box forked successfully`, `New Box ID: ${forked.id}`, json(forked)];
         }
 

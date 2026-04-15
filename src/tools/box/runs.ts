@@ -2,7 +2,7 @@ import { z } from "zod";
 import { json, tool } from "../helpers";
 import { buildBoxCommon } from "./common";
 import { getBoxClient } from "./utils";
-import type { BoxRun } from "./types";
+type RunRef = { status: string };
 
 export const boxRunsTool = {
   box_runs: tool({
@@ -21,14 +21,14 @@ export const boxRunsTool = {
 
       switch (action) {
         case "list": {
-          const response = await client.get<{ runs: BoxRun[] }>(`v2/box/${box_id}/runs`);
+          const response = await client.get<{ runs: unknown[] }>(`v2/box/${box_id}/runs`);
           const runs = response.runs ?? [];
           return [`Found ${runs.length} runs`, json(runs)];
         }
 
         case "get": {
           if (!run_id) throw new Error("run_id is required for get action");
-          const run = await client.get<BoxRun>(`v2/box/${box_id}/runs/${run_id}`);
+          const run = await client.get<RunRef>(`v2/box/${box_id}/runs/${run_id}`);
           return [`Run ${run_id} (status: ${run.status})`, json(run)];
         }
 

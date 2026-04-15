@@ -2,7 +2,8 @@ import { z } from "zod";
 import { json, tool } from "../helpers";
 import { buildBoxCommon } from "./common";
 import { getBoxClient } from "./utils";
-import type { Box, BoxSnapshot } from "./types";
+type BoxRef = { id: string; status: string };
+type SnapshotRef = { id: string; status: string };
 
 export const boxSnapshotsTool = {
   box_snapshots: tool({
@@ -52,7 +53,7 @@ export const boxSnapshotsTool = {
           const body: Record<string, unknown> = {};
           if (params.name) body.name = params.name;
 
-          const snapshot = await client.post<BoxSnapshot>(`v2/box/${box_id}/snapshots`, body);
+          const snapshot = await client.post<SnapshotRef>(`v2/box/${box_id}/snapshots`, body);
           return [
             `Snapshot created (status: ${snapshot.status})`,
             `Snapshot ID: ${snapshot.id}`,
@@ -62,7 +63,7 @@ export const boxSnapshotsTool = {
 
         case "list": {
           if (!box_id) throw new Error("box_id is required for list action");
-          const response = await client.get<{ snapshots: BoxSnapshot[] }>(
+          const response = await client.get<{ snapshots: SnapshotRef[] }>(
             `v2/box/${box_id}/snapshots`
           );
           const snapshots = response.snapshots ?? [];
@@ -70,7 +71,7 @@ export const boxSnapshotsTool = {
         }
 
         case "list_all": {
-          const response = await client.get<{ snapshots: BoxSnapshot[] }>("v2/box/snapshots");
+          const response = await client.get<{ snapshots: SnapshotRef[] }>("v2/box/snapshots");
           const snapshots = response.snapshots ?? [];
           return [`Found ${snapshots.length} snapshots total`, json(snapshots)];
         }
@@ -95,7 +96,7 @@ export const boxSnapshotsTool = {
           if (params.ephemeral !== undefined) body.ephemeral = params.ephemeral;
           if (params.ttl !== undefined) body.ttl = params.ttl;
 
-          const box = await client.post<Box>("v2/box/from-snapshot", body);
+          const box = await client.post<BoxRef>("v2/box/from-snapshot", body);
           return [
             `Box restored from snapshot (status: ${box.status})`,
             `New Box ID: ${box.id}`,

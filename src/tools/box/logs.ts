@@ -2,7 +2,6 @@ import { z } from "zod";
 import { json, tool } from "../helpers";
 import { buildBoxCommon } from "./common";
 import { getBoxClient } from "./utils";
-import type { BoxLogEntry } from "./types";
 
 export const boxLogsTool = {
   box_logs: tool({
@@ -28,7 +27,7 @@ export const boxLogsTool = {
       const { box_id, offset, limit } = params;
       const client = getBoxClient(params);
 
-      const response = await client.get<{ logs: BoxLogEntry[] }>(`v2/box/${box_id}/logs`, {
+      const response = await client.get<{ logs: unknown[] }>(`v2/box/${box_id}/logs`, {
         offset,
         limit,
       });

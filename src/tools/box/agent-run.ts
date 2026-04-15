@@ -2,7 +2,11 @@ import { z } from "zod";
 import { tool } from "../helpers";
 import { buildBoxCommon } from "./common";
 import { getBoxClient } from "./utils";
-import type { RunResponse } from "./types";
+type RunResponse = {
+  run_id?: string;
+  output?: string;
+  metadata?: { input_tokens?: number; output_tokens?: number; cost_usd?: number };
+};
 
 export const boxAgentRunTool = {
   box_agent_run: tool({

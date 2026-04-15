@@ -58,6 +58,55 @@ Add this to your MCP client configuration:
 claude mcp add --transport stdio upstash -- npx -y @upstash/mcp-server@latest --email YOUR_EMAIL --api-key YOUR_API_KEY
 ```
 
+### Box support (optional)
+
+If you use [Upstash Box](https://upstash.com/docs/box), you can configure the Box API key at startup so you don't have to pass it on every tool call. This is **optional** — Box tools still work without it (the agent will ask you for the key or read it from your `.env`).
+
+Pass it via the `--box-api-key` CLI flag:
+
+```json
+{
+  "mcpServers": {
+    "upstash": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@upstash/mcp-server@latest",
+        "--email",
+        "YOUR_EMAIL",
+        "--api-key",
+        "YOUR_API_KEY",
+        "--box-api-key",
+        "YOUR_BOX_API_KEY"
+      ]
+    }
+  }
+}
+```
+
+Or set the `UPSTASH_BOX_API_KEY` environment variable:
+
+```json
+{
+  "mcpServers": {
+    "upstash": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@upstash/mcp-server@latest",
+        "--email",
+        "YOUR_EMAIL",
+        "--api-key",
+        "YOUR_API_KEY"
+      ],
+      "env": {
+        "UPSTASH_BOX_API_KEY": "YOUR_BOX_API_KEY"
+      }
+    }
+  }
+}
+```
+
 ### Streamable HTTP Transport (for web applications)
 
 Start your MCP server with the `http` transport:
@@ -102,6 +151,8 @@ For testing, you can create a `.env` file in the same directory as the project w
 ```bash
 UPSTASH_EMAIL=<UPSTASH_EMAIL>
 UPSTASH_API_KEY=<UPSTASH_API_KEY>
+# Optional, for Box tools:
+UPSTASH_BOX_API_KEY=<UPSTASH_BOX_API_KEY>
 ```
 
 To install the local MCP Server to Claude Code, run:

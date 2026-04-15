@@ -29,6 +29,7 @@ const program = new Command()
   .option("--port <number>", "port for HTTP transport", "3000")
   .option("--email <email>", "Upstash email")
   .option("--api-key <key>", "Upstash API key")
+  .option("--box-api-key <key>", "Upstash Box API key (optional)")
   .option("--debug", "Enable debug mode")
   .option("--disable-telemetry", "Disable telemetry headers sent to Upstash APIs")
   .allowUnknownOption(); // let other wrappers pass through extra flags
@@ -40,6 +41,7 @@ const cliOptions = program.opts<{
   port: string;
   email?: string;
   apiKey?: string;
+  boxApiKey?: string;
   debug?: boolean;
   disableTelemetry?: boolean;
 }>();
@@ -91,6 +93,7 @@ async function main() {
   // Set config
   config.email = email;
   config.apiKey = apiKey;
+  config.boxApiKey = cliOptions.boxApiKey || process.env.UPSTASH_BOX_API_KEY || "";
   config.disableTelemetry = cliOptions.disableTelemetry ?? false;
 
   // Test connection

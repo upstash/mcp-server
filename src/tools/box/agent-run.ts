@@ -1,25 +1,21 @@
 import { z } from "zod";
 import { tool } from "../helpers";
-import { boxCommon } from "./common";
+import { buildBoxCommon } from "./common";
 import { getBoxClient } from "./utils";
 import type { RunResponse } from "./types";
 
 export const boxAgentRunTool = {
   box_agent_run: tool({
     description: `Run an AI agent prompt inside an Upstash Box. The agent has access to shell, filesystem, and git inside the box. It reasons, executes commands, and iterates until the task is complete. This is a synchronous call that may take a while depending on the complexity of the prompt.`,
-    inputSchema: z.object({
-      box_id: z.string().describe("The box ID to run the agent in"),
-      prompt: z.string().describe("The natural-language prompt for the agent to execute"),
-      model: z
-        .string()
-        .optional()
-        .describe("Override the box's default LLM model for this run"),
-      folder: z
-        .string()
-        .optional()
-        .describe("Working directory inside the box for the agent"),
-      ...boxCommon,
-    }),
+    get inputSchema() {
+      return z.object({
+        box_id: z.string().describe("The box ID to run the agent in"),
+        prompt: z.string().describe("The natural-language prompt for the agent to execute"),
+        model: z.string().optional().describe("Override the box's default LLM model for this run"),
+        folder: z.string().optional().describe("Working directory inside the box for the agent"),
+        ...buildBoxCommon(),
+      });
+    },
     handler: async (params) => {
       const { box_id, prompt, model, folder } = params;
       const client = getBoxClient(params);
@@ -30,9 +26,7 @@ export const boxAgentRunTool = {
 
       const response = await client.post<RunResponse>(`v2/box/${box_id}/run`, body);
 
-      const result: string[] = [
-        `Agent run completed`,
-      ];
+      const result: string[] = [`Agent run completed`];
 
       if (response.run_id) {
         result.push(`Run ID: ${response.run_id}`);

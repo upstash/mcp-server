@@ -1,33 +1,33 @@
 import { z } from "zod";
 import { json, tool } from "../helpers";
-import { boxCommon } from "./common";
+import { buildBoxCommon } from "./common";
 import { getBoxClient } from "./utils";
 import type { BoxPreview, CreatePreviewResponse } from "./types";
 
 export const boxPreviewTool = {
   box_preview: tool({
     description: `Manage preview URLs for web applications running inside an Upstash Box. Create public URLs to access services running on specific ports, list existing previews, or delete them.`,
-    inputSchema: z.object({
-      action: z
-        .enum(["create", "list", "delete"])
-        .describe("The action to perform"),
-      box_id: z.string().describe("The box ID"),
-      port: z
-        .number()
-        .min(1)
-        .max(65_535)
-        .optional()
-        .describe("Port number (required for create and delete)"),
-      basic_auth: z
-        .boolean()
-        .optional()
-        .describe("Enable basic auth on the preview URL (create only)"),
-      bearer_token: z
-        .boolean()
-        .optional()
-        .describe("Enable bearer token auth on the preview URL (create only)"),
-      ...boxCommon,
-    }),
+    get inputSchema() {
+      return z.object({
+        action: z.enum(["create", "list", "delete"]).describe("The action to perform"),
+        box_id: z.string().describe("The box ID"),
+        port: z
+          .number()
+          .min(1)
+          .max(65_535)
+          .optional()
+          .describe("Port number (required for create and delete)"),
+        basic_auth: z
+          .boolean()
+          .optional()
+          .describe("Enable basic auth on the preview URL (create only)"),
+        bearer_token: z
+          .boolean()
+          .optional()
+          .describe("Enable bearer token auth on the preview URL (create only)"),
+        ...buildBoxCommon(),
+      });
+    },
     handler: async (params) => {
       const { action, box_id, port, basic_auth, bearer_token } = params;
       const client = getBoxClient(params);
@@ -55,14 +55,9 @@ export const boxPreviewTool = {
         }
 
         case "list": {
-          const response = await client.get<{ previews: BoxPreview[] }>(
-            `v2/box/${box_id}/preview`
-          );
+          const response = await client.get<{ previews: BoxPreview[] }>(`v2/box/${box_id}/preview`);
           const previews = response.previews ?? [];
-          return [
-            `Found ${previews.length} preview URLs`,
-            json(previews),
-          ];
+          return [`Found ${previews.length} preview URLs`, json(previews)];
         }
 
         case "delete": {

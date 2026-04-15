@@ -1,27 +1,26 @@
 import { z } from "zod";
 import { tool } from "../helpers";
-import { boxCommon } from "./common";
+import { buildBoxCommon } from "./common";
 import { getBoxClient } from "./utils";
 import type { ExecResponse } from "./types";
 
 export const boxExecTool = {
   box_exec: tool({
     description: `Execute a shell command inside an Upstash Box container. Use this for file operations, git commands, package installs, or any shell operation inside the box.`,
-    inputSchema: z.object({
-      box_id: z.string().describe("The box ID to execute the command in"),
-      command: z
-        .array(z.string())
-        .describe("Command and arguments as an array (e.g. ['bash', '-c', 'ls -la'])"),
-      folder: z
-        .string()
-        .optional()
-        .describe("Working directory inside the box"),
-      async: z
-        .boolean()
-        .optional()
-        .describe("If true, return immediately without waiting for completion"),
-      ...boxCommon,
-    }),
+    get inputSchema() {
+      return z.object({
+        box_id: z.string().describe("The box ID to execute the command in"),
+        command: z
+          .array(z.string())
+          .describe("Command and arguments as an array (e.g. ['bash', '-c', 'ls -la'])"),
+        folder: z.string().optional().describe("Working directory inside the box"),
+        async: z
+          .boolean()
+          .optional()
+          .describe("If true, return immediately without waiting for completion"),
+        ...buildBoxCommon(),
+      });
+    },
     handler: async (params) => {
       const { box_id, command, folder, async: isAsync } = params;
       const client = getBoxClient(params);

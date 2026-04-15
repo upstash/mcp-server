@@ -1,67 +1,62 @@
 import { z } from "zod";
 import { json, tool } from "../helpers";
-import { boxCommon } from "./common";
+import { buildBoxCommon } from "./common";
 import { getBoxClient } from "./utils";
 import type { Box } from "./types";
 
 export const boxManageTool = {
   box_manage: tool({
     description: `Manage Upstash Box containers. Supports creating, listing, getting, deleting, pausing, resuming, and forking boxes. Boxes are secure cloud containers with built-in AI agent capabilities.`,
-    inputSchema: z.object({
-      action: z
-        .enum(["create", "list", "get", "delete", "pause", "resume", "fork"])
-        .describe("The action to perform"),
-      box_id: z
-        .string()
-        .optional()
-        .describe("Box ID (required for get, delete, pause, resume, fork)"),
-      // Create-specific fields
-      name: z.string().optional().describe("Display name for the box"),
-      model: z
-        .string()
-        .optional()
-        .describe("LLM model to use (e.g. 'claude/sonnet_4_6', 'openai/o4-mini'). Required for create"),
-      agent: z
-        .enum(["claude-code", "codex", "opencode"])
-        .optional()
-        .default("claude-code")
-        .describe("Agent type (default: claude-code)"),
-      runtime: z
-        .string()
-        .optional()
-        .default("node")
-        .describe("Runtime environment (e.g. 'node', 'python')"),
-      agent_api_key: z
-        .string()
-        .optional()
-        .describe("API key for the AI agent provider. Empty uses managed key"),
-      env_vars: z
-        .record(z.string())
-        .optional()
-        .describe("Environment variables to set in the box"),
-      clone_repo: z
-        .string()
-        .optional()
-        .describe("Git repository URL to clone into the box"),
-      clone_token: z
-        .string()
-        .optional()
-        .describe("Token for cloning private repositories"),
-      ephemeral: z
-        .boolean()
-        .optional()
-        .describe("If true, box auto-deletes after TTL expires"),
-      ttl: z
-        .number()
-        .optional()
-        .describe("Time-to-live in seconds for ephemeral boxes (max 259200 = 3 days)"),
-      // List-specific fields
-      status: z
-        .enum(["active", "deleted"])
-        .optional()
-        .describe("Filter for list action: 'active' (default) or 'deleted'"),
-      ...boxCommon,
-    }),
+    get inputSchema() {
+      return z.object({
+        action: z
+          .enum(["create", "list", "get", "delete", "pause", "resume", "fork"])
+          .describe("The action to perform"),
+        box_id: z
+          .string()
+          .optional()
+          .describe("Box ID (required for get, delete, pause, resume, fork)"),
+        // Create-specific fields
+        name: z.string().optional().describe("Display name for the box"),
+        model: z
+          .string()
+          .optional()
+          .describe(
+            "LLM model to use (e.g. 'claude/sonnet_4_6', 'openai/o4-mini'). Required for create"
+          ),
+        agent: z
+          .enum(["claude-code", "codex", "opencode"])
+          .optional()
+          .default("claude-code")
+          .describe("Agent type (default: claude-code)"),
+        runtime: z
+          .string()
+          .optional()
+          .default("node")
+          .describe("Runtime environment (e.g. 'node', 'python')"),
+        agent_api_key: z
+          .string()
+          .optional()
+          .describe("API key for the AI agent provider. Empty uses managed key"),
+        env_vars: z
+          .record(z.string())
+          .optional()
+          .describe("Environment variables to set in the box"),
+        clone_repo: z.string().optional().describe("Git repository URL to clone into the box"),
+        clone_token: z.string().optional().describe("Token for cloning private repositories"),
+        ephemeral: z.boolean().optional().describe("If true, box auto-deletes after TTL expires"),
+        ttl: z
+          .number()
+          .optional()
+          .describe("Time-to-live in seconds for ephemeral boxes (max 259200 = 3 days)"),
+        // List-specific fields
+        status: z
+          .enum(["active", "deleted"])
+          .optional()
+          .describe("Filter for list action: 'active' (default) or 'deleted'"),
+        ...buildBoxCommon(),
+      });
+    },
     handler: async (params) => {
       const { action, box_id } = params;
       const client = getBoxClient(params);
@@ -96,19 +91,13 @@ export const boxManageTool = {
           const query: Record<string, string | undefined> = {};
           if (params.status === "deleted") query.status = "deleted";
           const boxes = await client.get<Box[]>("v2/box", query);
-          return [
-            `Found ${boxes.length} boxes`,
-            json(boxes),
-          ];
+          return [`Found ${boxes.length} boxes`, json(boxes)];
         }
 
         case "get": {
           if (!box_id) throw new Error("box_id is required for get action");
           const box = await client.get<Box>(`v2/box/${box_id}`);
-          return [
-            `Box ${box_id} (status: ${box.status})`,
-            json(box),
-          ];
+          return [`Box ${box_id} (status: ${box.status})`, json(box)];
         }
 
         case "delete": {
@@ -132,11 +121,7 @@ export const boxManageTool = {
         case "fork": {
           if (!box_id) throw new Error("box_id is required for fork action");
           const forked = await client.post<Box>(`v2/box/${box_id}/fork`);
-          return [
-            `Box forked successfully`,
-            `New Box ID: ${forked.id}`,
-            json(forked),
-          ];
+          return [`Box forked successfully`, `New Box ID: ${forked.id}`, json(forked)];
         }
 
         default: {

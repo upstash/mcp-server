@@ -58,6 +58,7 @@ NOTE: Ask user for the region and name of the database.${GENERIC_DATABASE_NOTES}
   }),
 
   redis_database_list_databases: tool({
+    readonly: true,
     description: `List all Upstash redis databases. Only their names and ids.${GENERIC_DATABASE_NOTES}`,
     handler: async () => {
       const dbs = await http.get<RedisDatabase[]>("v2/redis/databases");
@@ -88,6 +89,7 @@ NOTE: Ask user for the region and name of the database.${GENERIC_DATABASE_NOTES}
   }),
 
   redis_database_get_details: tool({
+    readonly: true,
     description: `Get further details of a specific Upstash redis database. Includes all details of the database including usage statistics.
 db_disk_threshold: Total disk usage limit.
 db_memory_threshold: Maximum memory usage.
@@ -138,6 +140,7 @@ ${GENERIC_DATABASE_NOTES}
   }),
 
   redis_database_get_statistics: tool({
+    readonly: true,
     description: `Get comprehensive usage statistics of an Upstash redis database. Returns both:
 1. PRECISE 5-day usage: Exact command count and bandwidth usage over the last 5 days
 2. SAMPLED period stats: Sampled statistics over a specified period (1h, 3h, 12h, 1d, 3d, 7d) for performance monitoring

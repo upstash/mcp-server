@@ -58,6 +58,7 @@ export const redisBackupTools = {
   }),
 
   redis_database_list_backups: tool({
+    readonly: true,
     // TODO: Add explanation for fields
     // TODO: Is this in bytes?
     description: `List all backups of a specific Upstash redis database.`,

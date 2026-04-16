@@ -14,6 +14,12 @@ export type CustomTool<TSchema extends ZodSchema = ZodSchema> = {
   inputSchema?: TSchema;
 
   /**
+   * Whether this tool is safe to use with a readonly API key.
+   * Tools not marked as readonly will be hidden when a readonly key is detected.
+   */
+  readonly?: boolean;
+
+  /**
    * The handler function for the tool.
    * @param input Parsed input according to the input schema.
    * @returns

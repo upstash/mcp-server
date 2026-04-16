@@ -3,6 +3,7 @@ import { tool } from "./helpers";
 
 export const utilTools = {
   util_timestamps_to_date: tool({
+    readonly: true,
     description: `Use this tool to convert a timestamp to a human-readable date`,
     inputSchema: z.object({
       timestamps: z.array(z.number()).describe("Array of timestamps to convert"),
@@ -12,6 +13,7 @@ export const utilTools = {
     },
   }),
   util_dates_to_timestamps: tool({
+    readonly: true,
     description: `Use this tool to convert an array of ISO 8601 dates to an array of timestamps`,
     inputSchema: z.object({
       dates: z.array(z.string()).describe("Array of dates to convert"),

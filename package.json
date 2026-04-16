@@ -5,7 +5,7 @@
   "license": "MIT",
   "type": "module",
   "bin": {
-    "mcp-server": "./dist/index.js"
+    "mcp-server": "dist/index.js"
   },
   "repository": {
     "type": "git",

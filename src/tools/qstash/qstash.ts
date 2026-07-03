@@ -156,6 +156,7 @@ export const qstashTools = {
   }),
 
   qstash_logs_list: tool({
+    readonly: true,
     description: `List QStash logs with optional filtering. Returns a paginated list of message logs without their bodies.`,
     inputSchema: z.object({
       cursor: z.string().optional().describe("Cursor for pagination"),
@@ -226,6 +227,7 @@ export const qstashTools = {
   }),
 
   qstash_logs_get: tool({
+    readonly: true,
     description: `Get details of a single QStash log item by message ID without trimming the body.`,
     inputSchema: z.object({
       messageId: z.string().describe("The message ID to get details for"),
@@ -246,6 +248,7 @@ export const qstashTools = {
   }),
 
   qstash_dlq_list: tool({
+    readonly: true,
     description: `List messages in the QStash Dead Letter Queue (DLQ) with optional filtering.`,
     inputSchema: z.object({
       cursor: z.string().optional().describe("Cursor for pagination"),
@@ -284,6 +287,7 @@ export const qstashTools = {
   }),
 
   qstash_dlq_get: tool({
+    readonly: true,
     description: `Get details of a single DLQ message by DLQ ID.`,
     inputSchema: z.object({
       dlqId: z.string().describe("The DLQ ID of the message to retrieve"),
@@ -299,6 +303,7 @@ export const qstashTools = {
   }),
 
   qstash_schedules_list: tool({
+    readonly: true,
     description: `List all QStash schedules.`,
     inputSchema: z.object({
       ...qstashCommon,

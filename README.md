@@ -19,7 +19,7 @@ npx -y @upstash/mcp-server@latest --email YOUR_EMAIL --api-key YOUR_API_KEY
 ```
 
 > [!NOTE]
-> Readonly API keys are supported. When the server starts with one, it automatically disables every tool that would modify state (creating databases, deleting backups, retrying workflows, etc.). Your agent can still read and query your account, but it cannot make changes.
+> Readonly API keys are supported. When the server starts with one, it automatically disables every tool that would modify state (creating databases, deleting backups, retrying workflows, etc.). Your agent can still read and query your account — including Redis, QStash logs, schedules, and Workflow logs — but it cannot make changes. Upstash Box tools are not available with a readonly key.
 
 <details>
 <summary><b>Claude Code</b></summary>

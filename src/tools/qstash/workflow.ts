@@ -6,6 +6,7 @@ import { qstashCommon } from "./common";
 
 export const workflowTools = {
   workflow_logs_list: tool({
+    readonly: true,
     description: `List Upstash Workflow logs with optional filtering. Returns grouped workflow runs with their execution details.`,
     inputSchema: z.object({
       cursor: z.string().optional().describe("Cursor for pagination"),
@@ -53,6 +54,7 @@ export const workflowTools = {
   }),
 
   workflow_logs_get: tool({
+    readonly: true,
     description: `Get details of a single workflow run by workflow run ID. There
     could be multiple workflow runs with the same workflow run ID, so you can
     use the workflowCreatedAt to get the details of the specific workflow run.`,
@@ -87,6 +89,7 @@ export const workflowTools = {
   }),
 
   workflow_dlq_list: tool({
+    readonly: true,
     description: `List failed workflow runs in the Dead Letter Queue (DLQ) with optional filtering.`,
     inputSchema: z.object({
       cursor: z.string().optional().describe("Cursor for pagination"),
@@ -130,6 +133,7 @@ export const workflowTools = {
   }),
 
   workflow_dlq_get: tool({
+    readonly: true,
     description: `Get details of a single failed workflow run from the DLQ by DLQ ID.`,
     inputSchema: z.object({
       dlqId: z.string().describe("The DLQ ID of the failed workflow run to retrieve"),

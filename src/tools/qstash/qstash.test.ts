@@ -17,6 +17,10 @@ beforeAll(() => {
   }
   config.email = email;
   config.apiKey = apiKey;
+  config.readonly = false; // this suite uses a full-access key
+  // Discard any QStash users cached by another test file (e.g. readonly.test.ts,
+  // which populates the shared cache with read-only users whose `token` is empty).
+  clearTokenCache();
 });
 
 describe("qstash_get_user_token", () => {

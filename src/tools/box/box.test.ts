@@ -34,6 +34,44 @@ beforeAll(() => {
   boxApiKey = key;
 });
 
+// Box provisions snapshots asynchronously; deleting one while it is still being
+// created returns 409 ("Snapshot is still being created"). Poll the box's
+// snapshot list until ours leaves the "creating" state before deleting.
+async function waitForSnapshotReady(
+  boxId: string,
+  snapshotId: string,
+  { timeoutMs = 60_000, intervalMs = 2000 } = {}
+): Promise<string> {
+  const start = Date.now();
+  let lastStatus = "unknown";
+  while (Date.now() - start < timeoutMs) {
+    const result = await tools.box_snapshots.handler({
+      action: "list",
+      box_id: boxId,
+      box_api_key: boxApiKey,
+    });
+    const text = Array.isArray(result) ? result.join("\n") : String(result);
+    const jsonPart = text.slice(text.indexOf("\n") + 1).trim();
+    let snapshots: Array<{ id: string; status: string }> = [];
+    try {
+      snapshots = JSON.parse(jsonPart);
+    } catch {
+      // transient/unparseable response — retry
+    }
+    const snap = snapshots.find((s) => s.id === snapshotId);
+    if (snap) {
+      lastStatus = snap.status;
+      if (snap.status !== "creating") {
+        return snap.status;
+      }
+    }
+    await Bun.sleep(intervalMs);
+  }
+  throw new Error(
+    `Snapshot ${snapshotId} did not become ready within ${timeoutMs}ms (last status: ${lastStatus})`
+  );
+}
+
 afterAll(async () => {
   // Cleanup: delete any boxes with the e2e prefix that might be lingering
   try {
@@ -42,9 +80,7 @@ afterAll(async () => {
       box_api_key: boxApiKey,
     });
     const listText = Array.isArray(result) ? result.join("") : String(result);
-    const parsed = JSON.parse(
-      listText.replace(/^Found \d+ boxes/, "").trim() || "[]"
-    );
+    const parsed = JSON.parse(listText.replace(/^Found \d+ boxes/, "").trim() || "[]");
     if (Array.isArray(parsed)) {
       for (const box of parsed) {
         if (box.name?.startsWith(E2E_PREFIX)) {
@@ -297,6 +333,8 @@ describe("box_snapshots", () => {
   it("deletes the snapshot", async () => {
     expect(createdBoxId).toBeDefined();
     expect(createdSnapshotId).toBeDefined();
+    // Wait until Box finishes creating the snapshot, else delete returns 409.
+    await waitForSnapshotReady(createdBoxId, createdSnapshotId);
     const result = await tools.box_snapshots.handler({
       action: "delete",
       box_id: createdBoxId,
@@ -307,7 +345,7 @@ describe("box_snapshots", () => {
     expect(text).toContain("deleted successfully");
     // Mark as cleaned up so afterAll doesn't try again
     createdSnapshotId = "";
-  });
+  }, 90_000);
 });
 
 describe("box_manage cleanup", () => {

@@ -367,6 +367,17 @@ bun run watch
 
 This continuously builds the project and watches for changes.
 
+To run the built server standalone (uses `.env` for credentials) and smoke-test it before publishing:
+
+```bash
+bun i          # ensure deps are current
+bun run build
+# stdio (default) — waits for an MCP client to speak JSON-RPC on stdin:
+bun dist/index.js
+# or HTTP transport, to poke it manually on a port:
+bun dist/index.js --transport http --port 3000
+```
+
 For testing, create a `.env` file in the project root:
 
 ```bash

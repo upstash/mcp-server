@@ -79,11 +79,14 @@ describe("server tool filtering", () => {
     expect(writeToolNames).toContain("redis_database_reset_password");
     expect(writeToolNames).toContain("qstash_publish_message");
     expect(writeToolNames).toContain("qstash_schedules_manage");
+    expect(writeToolNames).toContain("workflow_dlq_manage");
 
-    // All QStash/workflow tools should be hidden in readonly mode (not supported yet)
-    expect(writeToolNames).toContain("qstash_logs_list");
-    expect(writeToolNames).toContain("qstash_schedules_list");
-    expect(writeToolNames).toContain("workflow_logs_list");
+    // QStash/workflow read tools are available in readonly mode via the read-only token
+    expect(readonlyToolNames).toContain("qstash_logs_list");
+    expect(readonlyToolNames).toContain("qstash_dlq_list");
+    expect(readonlyToolNames).toContain("qstash_schedules_list");
+    expect(readonlyToolNames).toContain("workflow_logs_list");
+    expect(readonlyToolNames).toContain("workflow_dlq_list");
 
     // Verify specific Redis read tools ARE marked readonly
     expect(readonlyToolNames).toContain("redis_database_list_databases");
@@ -152,23 +155,46 @@ describe("readonly redis write operations blocked", () => {
   });
 });
 
-describe("readonly qstash operations", () => {
-  it("qstash tools are not available in readonly mode", async () => {
-    expect(
-      qstashAllTools.qstash_schedules_list.handler({})
-    ).rejects.toThrow("QStash is not available in readonly mode yet");
+describe("readonly qstash read operations", () => {
+  it("lists qstash schedules using the read-only token", async () => {
+    const result = await qstashAllTools.qstash_schedules_list.handler({});
+    expect(Array.isArray(result)).toBe(true);
+    const [summary] = result as string[];
+    expect(summary).toMatch(/Found \d+ schedules/);
   });
 
-  it("workflow tools are not available in readonly mode", async () => {
-    expect(
-      qstashAllTools.workflow_logs_list.handler({ count: 3 })
-    ).rejects.toThrow("QStash is not available in readonly mode yet");
+  it("lists qstash logs using the read-only token", async () => {
+    clearTokenCache();
+    const result = await qstashAllTools.qstash_logs_list.handler({ count: 5 });
+    expect(Array.isArray(result)).toBe(true);
+    const [summary] = result as string[];
+    expect(summary).toMatch(/Found \d+ log entries/);
   });
 
-  it("qstash tools are hidden from server in readonly mode", () => {
-    const allQstashTools = Object.keys(qstashAllTools);
-    for (const name of allQstashTools) {
-      expect(qstashAllTools[name].readonly).toBeFalsy();
-    }
+  it("lists workflow logs using the read-only token", async () => {
+    clearTokenCache();
+    const result = await qstashAllTools.workflow_logs_list.handler({ count: 3 });
+    expect(Array.isArray(result)).toBe(true);
+    const [summary] = result as string[];
+    expect(summary).toMatch(/Found \d+ workflow runs/);
+  });
+});
+
+describe("readonly qstash write operations blocked", () => {
+  it("read-only token rejects publishing a message", async () => {
+    clearTokenCache();
+    expect(
+      qstashAllTools.qstash_publish_message.handler({
+        destination: "https://httpbin.org/post",
+        body: "{}",
+        method: "POST",
+      })
+    ).rejects.toThrow();
+  });
+
+  it("qstash write tools are not marked readonly (hidden from server)", () => {
+    expect(qstashAllTools.qstash_publish_message.readonly).toBeFalsy();
+    expect(qstashAllTools.qstash_schedules_manage.readonly).toBeFalsy();
+    expect(qstashAllTools.workflow_dlq_manage.readonly).toBeFalsy();
   });
 });

@@ -2,6 +2,11 @@
 
 export interface QStashUser {
   token: string;
+  /**
+   * Read-only QStash token. Present when the Upstash API key is read-only;
+   * only permits read operations (logs, DLQ, schedules listing).
+   */
+  read_only_token: string;
   region: string;
 }
 

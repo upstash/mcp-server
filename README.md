@@ -19,7 +19,7 @@ npx -y @upstash/mcp-server@latest --email YOUR_EMAIL --api-key YOUR_API_KEY
 ```
 
 > [!NOTE]
-> Readonly API keys are supported. When the server starts with one, it automatically disables every tool that would modify state (creating databases, deleting backups, retrying workflows, etc.). Your agent can still read and query your account, but it cannot make changes.
+> Readonly API keys are supported. When the server starts with one, it automatically disables every tool that would modify state (creating databases, deleting backups, retrying workflows, etc.). Your agent can still read and query your account — including Redis, QStash logs, schedules, and Workflow logs — but it cannot make changes. Upstash Box tools are not available with a readonly key.
 
 <details>
 <summary><b>Claude Code</b></summary>
@@ -366,6 +366,17 @@ bun run watch
 ```
 
 This continuously builds the project and watches for changes.
+
+To run the built server standalone (uses `.env` for credentials) and smoke-test it before publishing:
+
+```bash
+bun i          # ensure deps are current
+bun run build
+# stdio (default) — waits for an MCP client to speak JSON-RPC on stdin:
+bun dist/index.js
+# or HTTP transport, to poke it manually on a port:
+bun dist/index.js --transport http --port 3000
+```
 
 For testing, create a `.env` file in the project root:
 

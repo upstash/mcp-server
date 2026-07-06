@@ -38,7 +38,17 @@ export async function getQStashCredentials(region: string): Promise<{ token: str
     throw new Error(`No QStash user found for region '${region}' (${apiRegion})`);
   }
 
-  return { token: match.token };
+  // With a read-only Upstash API key, only the read-only token is returned by
+  // the API; the full-access token is empty. Read-only tools use it to hit read
+  // endpoints, and QStash itself rejects any write attempt made with it.
+  const token = config.readonly ? match.read_only_token : match.token;
+  if (!token) {
+    throw new Error(
+      `No ${config.readonly ? "read-only " : ""}QStash token available for region '${region}' (${apiRegion})`
+    );
+  }
+
+  return { token };
 }
 
 export async function createQStashClientWithToken(options: {
@@ -46,12 +56,6 @@ export async function createQStashClientWithToken(options: {
   region: string;
   local_mode_port: number;
 }): Promise<HttpClient> {
-  if (config.readonly) {
-    throw new Error(
-      "QStash is not available in readonly mode yet. This feature will be implemented in the near future."
-    );
-  }
-
   const { qstash_creds, region, local_mode_port } = options;
 
   if (qstash_creds) {

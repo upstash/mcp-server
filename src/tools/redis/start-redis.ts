@@ -9,6 +9,9 @@ export const startRedisTools = {
     // Creates nothing in the user's Upstash account and sends no API key, so it
     // stays available when the server is running with a readonly key.
     readonly: true,
+    // The response is markdown carrying a live token, which the JSON-shaped
+    // redaction in log() would not catch, so the server must not log it.
+    sensitive: true,
     description: `Get a free temporary Upstash redis database without an Upstash account or API key. Use this when YOU need a redis database to use or experiment with, instead of redis_database_create_new which creates one in the user's account.
 The response is markdown containing the endpoint, token, a console URL the user can use to claim the database, and a quickstart.
 NOTE: The database expires in 72 hours. If the user wants to keep it, share the console URL from the response with them so they can claim it.
@@ -28,7 +31,8 @@ NOTE: Don't store sensitive data in it — it is temporary and not tied to an ac
       });
 
       const text = await response.text();
-      // The body carries a live token, so only the status is logged.
+      // Only the status is logged here; the body carries a live token and is
+      // kept out of the server's result logging by `sensitive: true` above.
       log("<- start-redis responded", response.status);
 
       if (!response.ok) {

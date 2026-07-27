@@ -20,6 +20,16 @@ export type CustomTool<TSchema extends ZodSchema = ZodSchema> = {
   readonly?: boolean;
 
   /**
+   * Whether this tool's result contains secrets (e.g. live database
+   * credentials). The server never logs the result of a sensitive tool.
+   *
+   * The redaction in `log()` only masks secrets in JSON-shaped payloads, so
+   * tools that return credentials in another format (markdown, plain text)
+   * must set this.
+   */
+  sensitive?: boolean;
+
+  /**
    * The handler function for the tool.
    * @param input Parsed input according to the input schema.
    * @returns

@@ -22,7 +22,7 @@ export const redisDbOpsTools = {
   redis_database_create_new: tool({
     description: `Create a new Upstash redis database.
 NOTE: Ask user for the region and name of the database.
-NOTE: If you just need a database to use or experiment with yourself, rather than one the user owns, POST to https://upstash.com/start-redis instead — free, no signup, no API key; the response is markdown with credentials and a quickstart. It expires in 72 hours and the user can claim it to keep it.${GENERIC_DATABASE_NOTES}`,
+NOTE: If you just need a database to use or experiment with yourself, rather than one the user owns, use the redis_database_start_free tool instead — it needs no account and creates nothing in the user's account.${GENERIC_DATABASE_NOTES}`,
     inputSchema: z.object({
       name: z.string().describe("Name of the database."),
       primary_region: readRegionSchema.describe(`Primary Region of the Global Database.`),

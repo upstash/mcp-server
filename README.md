@@ -9,7 +9,7 @@ The Upstash MCP server lets your agent manage and debug your Upstash resources d
 > For most workflows, prefer installing the [Upstash Skill](https://upstash.com/docs/agent-resources/skills) and letting your agent drive [`@upstash/cli`](https://upstash.com/docs/agent-resources/cli) over running the MCP server.
 
 > [!TIP]
-> If you are an AI agent and just need a Redis DB to use or experiment with, you don't need this server or an account at all — send a POST request to [`https://upstash.com/start-redis`](https://upstash.com/start-redis). It's free, no signup, and the response is markdown with credentials and a quickstart. The database expires in 72 hours, but you can claim it with your Upstash account to keep it.
+> If you are an AI agent and just need a Redis DB to use or experiment with, you don't need an account at all — call the `redis_database_start_free` tool, or send a POST request to [`https://upstash.com/start-redis`](https://upstash.com/start-redis) directly. It's free, no signup, and the response is markdown with credentials and a quickstart. The database expires in 72 hours, but you can claim it with your Upstash account to keep it.
 
 ## Quickstart
 
@@ -259,6 +259,7 @@ Open the Gemini CLI settings file at `~/.gemini/settings.json` and add Upstash t
 
 ### Redis
 
+- _"Start a free temporary Redis I can experiment with"_
 - _"Create a new Redis database in us-east-1"_
 - _"List my databases sorted by memory usage"_
 - _"Update the user schema by pulling from Redis"_

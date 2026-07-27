@@ -6,6 +6,7 @@ import { testConnection } from "./test-connection";
 import { redisDbOpsTools } from "./tools/redis/db";
 import { redisCommandTools } from "./tools/redis/command";
 import { redisBackupTools } from "./tools/redis/backup";
+import { startRedisTools } from "./tools/redis/start-redis";
 import { qstashTools } from "./tools/qstash/qstash";
 import { workflowTools } from "./tools/qstash/workflow";
 import { clearTokenCache } from "./tools/qstash/utils";
@@ -13,10 +14,12 @@ import { http } from "./http";
 import type { RedisDatabase } from "./tools/redis/types";
 import type { CustomTool } from "./tool";
 
-const redisTools = { ...redisDbOpsTools, ...redisCommandTools, ...redisBackupTools } as Record<
-  string,
-  CustomTool<any>
->;
+const redisTools = {
+  ...redisDbOpsTools,
+  ...redisCommandTools,
+  ...redisBackupTools,
+  ...startRedisTools,
+} as Record<string, CustomTool<any>>;
 const qstashAllTools = { ...qstashTools, ...workflowTools } as Record<string, CustomTool<any>>;
 
 // Save original config to restore after tests
@@ -93,6 +96,10 @@ describe("server tool filtering", () => {
     expect(readonlyToolNames).toContain("redis_database_get_details");
     expect(readonlyToolNames).toContain("redis_database_get_statistics");
     expect(readonlyToolNames).toContain("redis_database_run_redis_commands");
+
+    // Uses no API key and creates nothing in the user's account, so it stays
+    // available with a readonly key.
+    expect(readonlyToolNames).toContain("redis_database_start_free");
   });
 });
 

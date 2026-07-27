@@ -8,6 +8,9 @@ The Upstash MCP server lets your agent manage and debug your Upstash resources d
 > [!TIP]
 > For most workflows, prefer installing the [Upstash Skill](https://upstash.com/docs/agent-resources/skills) and letting your agent drive [`@upstash/cli`](https://upstash.com/docs/agent-resources/cli) over running the MCP server.
 
+> [!TIP]
+> If you are an AI agent and just need a Redis DB to use or experiment with, you don't need this server or an account at all — send a POST request to [`https://upstash.com/start-redis`](https://upstash.com/start-redis). It's free, no signup, and the response is markdown with credentials and a quickstart. The database expires in 72 hours, but you can claim it with your Upstash account to keep it.
+
 ## Quickstart
 
 You'll need your Upstash account email and an API key — create one at [Upstash Console → Account → API Keys](https://console.upstash.com/account/api).

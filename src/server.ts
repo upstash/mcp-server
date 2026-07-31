@@ -47,7 +47,12 @@ export function createServerInstance() {
         try {
           const result = await tool.handler(args);
           const response = handlerResponseToCallResult(result);
-          log("> tool result:", response.content.map((item) => item.text).join("\n"));
+          log(
+            "> tool result:",
+            tool.sensitive
+              ? "<redacted: tool returns credentials>"
+              : response.content.map((item) => item.text).join("\n")
+          );
           return response;
         } catch (error) {
           const msg = error instanceof Error ? error.message : String(error);

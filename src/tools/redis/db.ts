@@ -20,8 +20,9 @@ const GENERIC_DATABASE_NOTES =
 
 export const redisDbOpsTools = {
   redis_database_create_new: tool({
-    description: `Create a new Upstash redis database. 
-NOTE: Ask user for the region and name of the database.${GENERIC_DATABASE_NOTES}`,
+    description: `Create a new Upstash redis database.
+NOTE: Ask user for the region and name of the database.
+NOTE: If you just need a database to use or experiment with yourself, rather than one the user owns, use the redis_database_start_free tool instead — it needs no account and creates nothing in the user's account.${GENERIC_DATABASE_NOTES}`,
     inputSchema: z.object({
       name: z.string().describe("Name of the database."),
       primary_region: readRegionSchema.describe(`Primary Region of the Global Database.`),

@@ -1,4 +1,5 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { config } from "./config";
 import { log } from "./log";
 import { tools } from "./tools";
 import { handlerResponseToCallResult } from "./tool";
@@ -17,7 +18,11 @@ export function createServerInstance() {
     }
   );
 
-  const toolsList = Object.entries(tools).map(([name, tool]) => ({
+  const filteredTools = config.readonly
+    ? Object.fromEntries(Object.entries(tools).filter(([_, tool]) => tool.readonly))
+    : tools;
+
+  const toolsList = Object.entries(filteredTools).map(([name, tool]) => ({
     name,
     description: tool.description,
     inputSchema: tool.inputSchema,
@@ -42,7 +47,12 @@ export function createServerInstance() {
         try {
           const result = await tool.handler(args);
           const response = handlerResponseToCallResult(result);
-          log("> tool result:", response.content.map((item) => item.text).join("\n"));
+          log(
+            "> tool result:",
+            tool.sensitive
+              ? "<redacted: tool returns credentials>"
+              : response.content.map((item) => item.text).join("\n")
+          );
           return response;
         } catch (error) {
           const msg = error instanceof Error ? error.message : String(error);

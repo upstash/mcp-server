@@ -13,6 +13,11 @@ startCommand:
         type: "string"
         title: "API Key"
         description: "Your Upstash management API key"
+      boxApiKey:
+        type: "string"
+        title: "Box API Key (optional)"
+        description: "Your Upstash Box API key. Only required if you want to use Box tools without passing the key on every tool call."
   exampleConfig:
     email: "user@example.com"
     apiKey: "sk-example123"
+    boxApiKey: "box_example123"

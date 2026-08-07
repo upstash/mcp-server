@@ -2,6 +2,7 @@ import { z } from "zod";
 import { json, tool } from "../helpers";
 import { log } from "../../log";
 import { http } from "../../http";
+import { config } from "../../config";
 import type { RedisDatabase } from "./types";
 
 type RedisCommandResult =
@@ -14,6 +15,7 @@ type RedisCommandResult =
 
 export const redisCommandTools = {
   redis_database_run_redis_commands: tool({
+    readonly: true,
     description: `Run one or more Redis commands on a specific Upstash redis database. Either provide database_id OR both database_rest_url and database_rest_token.
 NOTE: For discovery, use SCAN over KEYS. Use TYPE to get the type of a key.
 NOTE: SCAN cursor [MATCH pattern] [COUNT count] [TYPE type]
@@ -51,7 +53,7 @@ NOTE: Multiple commands will be executed as a pipeline for better performance.`,
         log("Fetching database details for database_id:", database_id);
         const db = await http.get<RedisDatabase>(["v2/redis/database", database_id]);
         restUrl = "https://" + db.endpoint;
-        restToken = db.rest_token;
+        restToken = config.readonly ? db.read_only_rest_token : db.rest_token;
       }
 
       if (!restUrl || !restToken) {

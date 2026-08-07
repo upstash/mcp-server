@@ -11,10 +11,14 @@ let capturedHeaders: Record<string, string> = {};
 
 beforeEach(() => {
   capturedHeaders = {};
-  fetchSpy = spyOn(globalThis, "fetch").mockImplementation(async (_url, init) => {
-    capturedHeaders = (init?.headers ?? {}) as Record<string, string>;
-    return new Response("{}", { status: 200, headers: { "content-type": "application/json" } });
-  });
+  const mockFetch = Object.assign(
+    async (_url: URL | RequestInfo, init?: RequestInit): Promise<Response> => {
+      capturedHeaders = (init?.headers ?? {}) as Record<string, string>;
+      return new Response("{}", { status: 200, headers: { "content-type": "application/json" } });
+    },
+    { preconnect: () => {} }
+  );
+  fetchSpy = spyOn(globalThis, "fetch").mockImplementation(mockFetch);
 });
 
 afterEach(() => {

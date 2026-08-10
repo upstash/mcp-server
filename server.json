@@ -1,0 +1,41 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.upstash/mcp-server",
+  "description": "Manage Upstash databases and resources through the Upstash Developer API.",
+  "repository": {
+    "url": "https://github.com/upstash/mcp-server",
+    "source": "github"
+  },
+  "version": "0.0.0",
+  "packages": [
+    {
+      "registryType": "npm",
+      "registryBaseUrl": "https://registry.npmjs.org",
+      "identifier": "@upstash/mcp-server",
+      "version": "0.0.0",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "UPSTASH_EMAIL",
+          "description": "Email address of your Upstash account.",
+          "isRequired": true,
+          "isSecret": false
+        },
+        {
+          "name": "UPSTASH_API_KEY",
+          "description": "Upstash Developer API key (create one at https://console.upstash.com/account/api).",
+          "isRequired": true,
+          "isSecret": true
+        },
+        {
+          "name": "UPSTASH_BOX_API_KEY",
+          "description": "Upstash Box API key for Box-related tools.",
+          "isRequired": false,
+          "isSecret": true
+        }
+      ]
+    }
+  ]
+}

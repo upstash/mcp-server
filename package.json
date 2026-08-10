@@ -1,6 +1,7 @@
 {
   "version": "0.0.0",
   "name": "@upstash/mcp-server",
+  "mcpName": "io.github.upstash/mcp-server",
   "description": "MCP server for Upstash",
   "license": "MIT",
   "type": "module",

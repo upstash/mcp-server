@@ -3,6 +3,8 @@ import { tool } from "../helpers";
 import { log } from "../../log";
 
 const START_REDIS_URL = "https://upstash.com/start-redis";
+// Fallback for callers that don't identify themselves via the user_agent input.
+const DEFAULT_USER_AGENT = "upstash/mcp-server";
 
 export const startRedisTools = {
   redis_database_start_free: tool({
@@ -23,11 +25,22 @@ NOTE: Don't store sensitive data in it — it is temporary and not tied to an ac
         .describe(
           "ID of a database started earlier. Pass it to re-fetch that database's credentials instead of starting a new one."
         ),
+      user_agent: z
+        .string()
+        .optional()
+        .describe(
+          "Name of the agent making this call, sent as the User-Agent header (e.g. `claude-code`, `cursor`, `codex`, `opencode`). If you are an agent, always identify yourself here."
+        ),
     }),
-    handler: async ({ database_id }) => {
+    handler: async ({ database_id, user_agent }) => {
+      const headers: Record<string, string> = {
+        "User-Agent": user_agent ?? DEFAULT_USER_AGENT,
+      };
+      if (database_id) headers["Idempotency-Key"] = database_id;
+
       const response = await fetch(START_REDIS_URL, {
         method: "POST",
-        headers: database_id ? { "Idempotency-Key": database_id } : undefined,
+        headers,
       });
 
       const text = await response.text();

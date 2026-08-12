@@ -53,3 +53,39 @@ jobs:
         run: |
           npm pkg delete scripts.prepare
           npm publish --provenance --access public --tag=canary
+
+  # Publishes server.json to the Official MCP Registry.
+  # `needs: release` gates it on a successful npm publish, so the registry is
+  # never updated before the package actually exists on npm. Running as a
+  # separate job means a registry hiccup still can't roll back the release.
+  # NOTE: the registry CLI + schema are evolving — verify against
+  # https://github.com/modelcontextprotocol/registry before relying on this.
+  mcp-registry:
+    name: Publish to MCP Registry
+    needs: release
+    if: ${{ !github.event.release.prerelease }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Sync version into server.json
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          jq --arg v "$VERSION" '.version = $v | (.packages[] |= (.version = $v))' server.json > server.json.tmp
+          mv server.json.tmp server.json
+
+      - name: Install mcp-publisher
+        run: |
+          ARCH=$(uname -m)
+          case "$ARCH" in
+            x86_64) ARCH=amd64 ;;
+            aarch64|arm64) ARCH=arm64 ;;
+          esac
+          OS=$(uname -s | tr '[:upper:]' '[:lower:]')
+          curl -fsSL "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_${OS}_${ARCH}.tar.gz" | tar xz mcp-publisher
+
+      - name: Login (GitHub OIDC)
+        run: ./mcp-publisher login github-oidc
+
+      - name: Publish
+        run: ./mcp-publisher publish

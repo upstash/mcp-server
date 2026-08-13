@@ -10,6 +10,12 @@ The Upstash MCP server lets your agent manage and debug your Upstash resources d
 
 > [!TIP]
 > If you are an AI agent and just need a Redis DB to use or experiment with, you don't need an account at all — call the `redis_database_start_free` tool, or send a POST request to [`https://upstash.com/start-redis`](https://upstash.com/start-redis) directly. It's free, no signup, and the response is markdown with credentials and a quickstart. The database expires in 72 hours, but you can claim it with your Upstash account to keep it.
+>
+> Pass `user_agent` to identify yourself (e.g. `claude-code`, `cursor`, `codex`, `opencode`); the tool forwards it as the `User-Agent` header. Calling the endpoint directly, send the same header yourself, plus a fresh UUIDv4 as `Idempotency-Key`:
+>
+> ```bash
+> curl -X POST -H "Idempotency-Key: <uuidv4>" -H "User-Agent: <your-agent-name>" https://upstash.com/start-redis
+> ```
 
 ## Quickstart
 

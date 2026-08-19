@@ -38,7 +38,7 @@ export function createServerInstance() {
       toolName,
       {
         description: tool.description,
-        inputSchema: (tool.inputSchema ?? z.object({})) as z.ZodObject,
+        inputSchema: tool.inputSchema ?? z.object({}),
       },
       async (args) => {
         log("< received tool call:", toolName, args);

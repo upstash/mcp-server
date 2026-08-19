@@ -1,11 +1,10 @@
-import type { CallToolResultSchema } from "@modelcontextprotocol/sdk/types.js";
-import type { ZodSchema } from "zod";
+import type { CallToolResult } from "@modelcontextprotocol/server";
 import type { z } from "zod";
 import { MAX_MESSAGE_LENGTH } from "./settings";
 
-type HandlerResponse = string | string[] | z.infer<typeof CallToolResultSchema>;
+type HandlerResponse = string | string[] | CallToolResult;
 
-export type CustomTool<TSchema extends ZodSchema = ZodSchema> = {
+export type CustomTool<TSchema extends z.ZodType = z.ZodType> = {
   description: string;
 
   /**
@@ -40,9 +39,7 @@ export type CustomTool<TSchema extends ZodSchema = ZodSchema> = {
   handler: (input: z.infer<TSchema>) => Promise<HandlerResponse>;
 };
 
-export function handlerResponseToCallResult(
-  response: HandlerResponse
-): z.infer<typeof CallToolResultSchema> {
+export function handlerResponseToCallResult(response: HandlerResponse): CallToolResult {
   if (typeof response === "string" || Array.isArray(response)) {
     const array = Array.isArray(response) ? response : [response];
 

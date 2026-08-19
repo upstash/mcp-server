@@ -9,7 +9,7 @@ export const redisBackupTools = {
     inputSchema: z.object({
       database_id: z.string().describe("The ID of the database to manage backups for."),
       operation: z
-        .union([z.literal("create"), z.literal("delete"), z.literal("restore")])
+        .enum(["create", "delete", "restore"])
         .describe("The backup operation to perform: create, delete, or restore."),
       backup_name: z
         .string()

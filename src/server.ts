@@ -1,4 +1,4 @@
-import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { McpServer } from "@modelcontextprotocol/server";
 import { config } from "./config";
 import { log } from "./log";
 import { tools } from "./tools";
@@ -38,9 +38,8 @@ export function createServerInstance() {
       toolName,
       {
         description: tool.description,
-        inputSchema: ((tool.inputSchema ?? z.object({})) as any).shape,
+        inputSchema: (tool.inputSchema ?? z.object({})) as z.ZodObject,
       },
-      // @ts-expect-error - Just ignore the types here
       async (args) => {
         log("< received tool call:", toolName, args);
 
@@ -51,7 +50,7 @@ export function createServerInstance() {
             "> tool result:",
             tool.sensitive
               ? "<redacted: tool returns credentials>"
-              : response.content.map((item) => item.text).join("\n")
+              : response.content.map((item) => ("text" in item ? item.text : "")).join("\n")
           );
           return response;
         } catch (error) {
@@ -66,7 +65,7 @@ export function createServerInstance() {
               ...(DEBUG
                 ? [
                     {
-                      type: "text",
+                      type: "text" as const,
                       text: `\nStack trace: ${error instanceof Error ? error.stack : "No stack trace available"}`,
                     },
                   ]

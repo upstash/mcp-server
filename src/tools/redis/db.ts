@@ -4,15 +4,15 @@ import { http } from "../../http";
 import type { RedisDatabase, RedisUsageResponse, UsageData } from "./types";
 import { pruneFalsy } from "../../utils";
 
-const readRegionSchema = z.union([
-  z.literal("us-east-1"),
-  z.literal("us-west-1"),
-  z.literal("us-west-2"),
-  z.literal("eu-west-1"),
-  z.literal("eu-central-1"),
-  z.literal("ap-southeast-1"),
-  z.literal("ap-southeast-2"),
-  z.literal("sa-east-1"),
+const readRegionSchema = z.enum([
+  "us-east-1",
+  "us-west-1",
+  "us-west-2",
+  "eu-west-1",
+  "eu-central-1",
+  "ap-southeast-1",
+  "ap-southeast-2",
+  "sa-east-1",
 ]);
 
 const GENERIC_DATABASE_NOTES =
@@ -152,14 +152,7 @@ NOTE: Ask user first if they want to see stats for each database separately or j
     inputSchema: z.object({
       id: z.string().describe("The ID of your database."),
       period: z
-        .union([
-          z.literal("1h"),
-          z.literal("3h"),
-          z.literal("12h"),
-          z.literal("1d"),
-          z.literal("3d"),
-          z.literal("7d"),
-        ])
+        .enum(["1h", "3h", "12h", "1d", "3d", "7d"])
         .describe("The period for sampled stats."),
       stat_type: z
         .union([

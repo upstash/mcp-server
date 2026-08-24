@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+import { createMcpHandler } from "@modelcontextprotocol/server";
+import { serveStdio } from "@modelcontextprotocol/server/stdio";
+import { toNodeHandler } from "@modelcontextprotocol/node";
 import { Command } from "commander";
 // eslint-disable-next-line unicorn/prefer-node-protocol
 import { createServer, type IncomingMessage } from "http";
@@ -106,6 +107,16 @@ async function main() {
     const initialPort = CLI_PORT ?? 3000;
     // Keep track of which port we end up using
     let actualPort = initialPort;
+
+    // One fetch-shaped MCP handler for the process; it calls the factory once
+    // per request, so serving stays stateless as it was before.
+    const mcpNodeHandler = toNodeHandler(
+      createMcpHandler(() => createServerInstance(), {
+        onerror: (error) => console.error("MCP handler error:", error),
+      }),
+      { onerror: (error) => console.error("MCP request error:", error) }
+    );
+
     const httpServer = createServer(async (req: IncomingMessage, res: any) => {
       const pathname = new (globalThis as any).URL(req.url || "", `http://${req.headers.host}`)
         .pathname;
@@ -127,15 +138,9 @@ async function main() {
       }
 
       try {
-        // Create new server instance for each request
-        const requestServer = createServerInstance();
-
         if (pathname === "/mcp") {
-          const transport = new StreamableHTTPServerTransport({
-            sessionIdGenerator: undefined,
-          });
-          await requestServer.connect(transport);
-          await transport.handleRequest(req, res);
+          // The handler builds a fresh server instance for each request
+          await mcpNodeHandler(req, res);
         } else if (pathname === "/ping") {
           res.writeHead(200, { "Content-Type": "application/json" });
           res.end(JSON.stringify({ status: "ok", message: "pong" }));
@@ -176,18 +181,9 @@ async function main() {
     startServer(initialPort);
   } else {
     // Stdio transport - this is already stateless by nature
-    const server = createServerInstance();
-    const transport = new StdioServerTransport();
-
-    // Log the RCP messages coming to the transport
-    // const originalOnmessage = transport.onmessage;
-    // transport.onmessage = (message) => {
-    //   console.error("message", message);
-
-    //   originalOnmessage?.(message);
-    // };
-
-    await server.connect(transport);
+    serveStdio(() => createServerInstance(), {
+      onerror: (error) => console.error("MCP stdio error:", error),
+    });
     console.error("Upstash MCP Server running on stdio");
   }
 }

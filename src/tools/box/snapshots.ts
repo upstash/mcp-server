@@ -32,7 +32,7 @@ export const boxSnapshotsTool = {
           .optional()
           .describe("Override the snapshot's runtime for the restored box"),
         env_vars: z
-          .record(z.string())
+          .record(z.string(), z.string())
           .optional()
           .describe("Environment variables for the restored box"),
         ephemeral: z.boolean().optional().describe("Create the restored box as ephemeral"),

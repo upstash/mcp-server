@@ -76,7 +76,10 @@ export const qstashTools = {
         .optional()
         .describe("Flow control for rate limiting and parallelism management"),
 
-      extraHeaders: z.record(z.string()).optional().describe("Extra headers to add to the request"),
+      extraHeaders: z
+        .record(z.string(), z.string())
+        .optional()
+        .describe("Extra headers to add to the request"),
       ...qstashCommon,
     }),
     handler: async (params) => {
@@ -335,7 +338,10 @@ export const qstashTools = {
         .enum(["GET", "POST", "PUT", "DELETE", "PATCH"])
         .optional()
         .describe("HTTP method (optional, defaults to POST)"),
-      headers: z.record(z.string()).optional().describe("Request headers as key-value pairs"),
+      headers: z
+        .record(z.string(), z.string())
+        .optional()
+        .describe("Request headers as key-value pairs"),
       body: z.string().optional().describe("Request body"),
       delay: z
         .string()

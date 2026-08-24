@@ -39,7 +39,7 @@ export const boxManageTool = {
           .optional()
           .describe("API key for the AI agent provider. Empty uses managed key"),
         env_vars: z
-          .record(z.string())
+          .record(z.string(), z.string())
           .optional()
           .describe("Environment variables to set in the box"),
         clone_repo: z.string().optional().describe("Git repository URL to clone into the box"),

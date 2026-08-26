@@ -1,4 +1,5 @@
-import { readFile, stat as statLocal } from "node:fs/promises";
+import { openAsBlob } from "node:fs";
+import { stat as statLocal } from "node:fs/promises";
 import path from "node:path";
 import { z } from "zod";
 import { json, tool } from "../helpers";
@@ -47,6 +48,7 @@ Long results are truncated before you see them, and the truncation is marked. Fo
             .number()
             .int()
             .min(0)
+            .max(MAX_RANGE_READ_BYTES)
             .optional()
             .describe(
               "Read only this many bytes (max 8 MiB). OMIT this to read the whole file — passing 0 reads zero bytes, it does not mean 'all'"
@@ -229,16 +231,20 @@ Long results are truncated before you see them, and the truncation is marked. Fo
     },
   }),
   box_upload: tool({
-    description: `Copy files from YOUR machine into an Upstash Box. This is the one box tool that reads local paths: it takes files that exist on the user's computer and puts them in the box, which is how uncommitted local work gets into a workspace (a clone only brings what is pushed).
+    description: `Copy files from the machine RUNNING THIS SERVER into an Upstash Box. This is the one box tool that reads local paths, which is how uncommitted local work gets into a workspace (a clone only brings what is pushed).
 
-Up to 10 files per call, 100 MB each. For content you already have in hand, use box_write instead — this is for files on disk.`,
+Paths are resolved on the server's own filesystem. When the server runs locally (stdio, the usual setup) that is the user's machine; when it runs remotely over HTTP it is the server host, and a path from the user's computer will not exist there. For content you already have in hand, use box_write instead — this is for files on disk.
+
+Up to 10 files per call, 100 MB each.`,
     get inputSchema() {
       return z.object({
         box_id: z.string().describe("The box to upload into"),
         files: z
           .array(
             z.object({
-              local_path: z.string().describe("Absolute path of the file on the user's machine"),
+              local_path: z
+                .string()
+                .describe("Absolute path of the file on the machine running this MCP server"),
               destination: z
                 .string()
                 .optional()
@@ -260,7 +266,8 @@ Up to 10 files per call, 100 MB each. For content you already have in hand, use 
       for (const entry of files) {
         const localPath = path.resolve(entry.local_path);
         const info = await statLocal(localPath).catch(() => {});
-        if (info === undefined) throw new Error(`No such file on this machine: ${localPath}`);
+        if (info === undefined)
+          throw new Error(`No such file on the machine running this server: ${localPath}`);
         if (info.isDirectory()) {
           throw new Error(
             `${localPath} is a directory; upload its files individually, or clone the repository into the box with box_git`
@@ -275,7 +282,9 @@ Up to 10 files per call, 100 MB each. For content you already have in hand, use 
         // `paths` and `files` are positional: the server pairs them by index and
         // rejects the request when the counts differ.
         form.append("paths", destination);
-        form.append("files", new Blob([await readFile(localPath)]), path.basename(destination));
+        // openAsBlob keeps the bytes on disk until fetch streams them, so a
+        // batch of large files is not held in memory all at once.
+        form.append("files", await openAsBlob(localPath), path.basename(destination));
         summary.push(`${localPath} -> ${destination}`);
       }
 
@@ -284,6 +293,9 @@ Up to 10 files per call, 100 MB each. For content you already have in hand, use 
     },
   }),
 };
+
+/** Server's ceiling for one ranged read. */
+const MAX_RANGE_READ_BYTES = 8 * 1024 * 1024;
 
 /** Per-file ceiling the upload endpoint enforces. */
 const MAX_UPLOAD_BYTES = 100 * 1024 * 1024;
@@ -315,8 +327,8 @@ export function applyEdit(
   if (first === -1) {
     throw new Error(`old_string was not found in ${path}; read the file and copy the exact text`);
   }
-  if (content.includes(oldString, first + oldString.length)) {
-    const count = content.split(oldString).length - 1;
+  if (content.includes(oldString, first + 1)) {
+    const count = countOccurrences(content, oldString);
     throw new Error(
       `old_string appears ${count} times in ${path}; include more surrounding context so it matches exactly once`
     );
@@ -373,4 +385,25 @@ export function buildReadQuery(input: {
     query.offset = input.offset ?? 0;
   }
   return query;
+}
+
+/**
+ * Count occurrences, including overlapping ones.
+ *
+ * `split().length - 1` and a search resumed past the previous match both miss
+ * overlaps: "aa" appears twice in "aaa", not once.
+ * @param content - text to search.
+ * @param needle - non-empty substring to count.
+ * @returns how many positions the needle starts at.
+ */
+export function countOccurrences(content: string, needle: string): number {
+  let count = 0;
+  for (
+    let index = content.indexOf(needle);
+    index !== -1;
+    index = content.indexOf(needle, index + 1)
+  ) {
+    count++;
+  }
+  return count;
 }

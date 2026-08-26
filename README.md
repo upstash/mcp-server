@@ -288,7 +288,7 @@ Open the Gemini CLI settings file at `~/.gemini/settings.json` and add Upstash t
 
 ## Using a Box as your workspace
 
-A Box is a remote Linux container with its own filesystem. The Box tools let an agent work inside one while the agent itself keeps running on your machine: files through `box_read` / `box_write` / `box_edit`, commands through `box_exec`, git and search through `box_git`, and a running server through `box_preview`. `box_upload` copies files from your machine into the Box, which is how uncommitted local work gets in — a clone only brings what you have pushed.
+A Box is a remote Linux container with its own filesystem. The Box tools let an agent work inside one while the agent itself keeps running on your machine: files through `box_read` / `box_write` / `box_edit`, commands through `box_exec`, git and search through `box_git`, and a running server through `box_preview`. `box_upload` copies files into the Box from the machine running the MCP server, which is how uncommitted local work gets in — a clone only brings what you have pushed. With the usual stdio setup the server runs on your own machine, so those are your paths; if you run it remotely with `--transport http`, it reads the server host's filesystem instead, not yours.
 
 Box tools need a Box API key, which is a different credential from your Upstash account API key — the two are not interchangeable. The install command at the top of this README does not include one, so pass `--box-api-key` as well or the first Box call will fail:
 

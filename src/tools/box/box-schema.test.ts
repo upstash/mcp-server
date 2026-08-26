@@ -1,7 +1,7 @@
 import { describe, it, expect } from "bun:test";
 import { boxManageTool, buildCreateBody, clonedRepoDir } from "./manage";
 import { boxFilesTool } from "./files";
-import { applyEdit, buildListQuery, buildReadQuery, unwrapFiles } from "./files";
+import { applyEdit, buildListQuery, buildReadQuery, countOccurrences, unwrapFiles } from "./files";
 
 /**
  * Pure schema/serialization checks. These must not touch the network: the live
@@ -200,5 +200,48 @@ describe("clone directory", () => {
   it("returns nothing when there is no clone", () => {
     expect(clonedRepoDir()).toBeUndefined();
     expect(clonedRepoDir("")).toBeUndefined();
+  });
+});
+
+describe("overlapping matches", () => {
+  it("counts overlapping occurrences", () => {
+    // "aa" starts at index 0 and 1 of "aaa"; split() and a search resumed past
+    // the first match both report one.
+    expect(countOccurrences("aaa", "aa")).toBe(2);
+    expect(countOccurrences("aaaa", "aa")).toBe(3);
+    expect(countOccurrences("abc", "z")).toBe(0);
+  });
+
+  it("refuses an edit whose match overlaps itself", () => {
+    // Previously this replaced index 0 silently.
+    expect(() => applyEdit("aaa", "aa", "b", "f.txt")).toThrow(/appears 2 times/);
+  });
+
+  it("still allows a genuinely unique match", () => {
+    expect(applyEdit("abcabd", "abc", "xyz", "f.txt").text).toBe("xyzabd");
+  });
+});
+
+describe("documented limits are enforced by the schema", () => {
+  it("rejects a ranged read above the server's 8 MiB ceiling", () => {
+    expect(parseRead({ box_id: "b", path: "a", length: 8 * 1024 * 1024 }).success).toBe(true);
+    expect(parseRead({ box_id: "b", path: "a", length: 8 * 1024 * 1024 + 1 }).success).toBe(false);
+  });
+
+  it("rejects more than five labels, or a label over 20 characters", () => {
+    const base = { action: "create", runtime: "node" };
+    expect(parseManage({ ...base, labels: ["a", "b", "c", "d", "e"] }).success).toBe(true);
+    expect(parseManage({ ...base, labels: ["a", "b", "c", "d", "e", "f"] }).success).toBe(false);
+    expect(parseManage({ ...base, labels: ["x".repeat(20)] }).success).toBe(true);
+    expect(parseManage({ ...base, labels: ["x".repeat(21)] }).success).toBe(false);
+  });
+
+  it("caps box_upload at ten files", () => {
+    const files = Array.from({ length: 11 }, (_unused, i) => ({ local_path: `/tmp/${i}` }));
+    const schema = boxFilesTool.box_upload.inputSchema!;
+    expect(
+      schema.safeParse({ box_api_key: "box_test", box_id: "b", files: files.slice(0, 10) }).success
+    ).toBe(true);
+    expect(schema.safeParse({ box_api_key: "box_test", box_id: "b", files }).success).toBe(false);
   });
 });

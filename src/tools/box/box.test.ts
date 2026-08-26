@@ -9,6 +9,8 @@ import { boxLogsTool } from "./logs";
 import { boxRunsTool } from "./runs";
 import { boxPreviewTool } from "./preview";
 import { boxSnapshotsTool } from "./snapshots";
+import { boxFilesTool } from "./files";
+import { boxGitTool } from "./git";
 
 const tools = {
   ...boxManageTool,
@@ -18,9 +20,14 @@ const tools = {
   ...boxRunsTool,
   ...boxPreviewTool,
   ...boxSnapshotsTool,
+  ...boxFilesTool,
+  ...boxGitTool,
 } as Record<string, CustomTool<any>>;
 
 const E2E_PREFIX = "mcp-e2e-";
+
+/** Tool handlers return a string or a list of lines; flatten for assertions. */
+const text = (result: unknown) => (Array.isArray(result) ? result.join("\n") : String(result));
 let boxApiKey: string;
 let createdBoxId: string;
 let createdSnapshotId: string;
@@ -346,6 +353,229 @@ describe("box_snapshots", () => {
     // Mark as cleaned up so afterAll doesn't try again
     createdSnapshotId = "";
   }, 90_000);
+});
+
+describe("box files", () => {
+  it("writes and reads a file back exactly", async () => {
+    await tools.box_write.handler({
+      box_id: createdBoxId,
+      path: "e2e/note.txt",
+      content: "alpha\nbeta\n",
+      box_api_key: boxApiKey,
+    });
+    const read = await tools.box_read.handler({
+      box_id: createdBoxId,
+      path: "e2e/note.txt",
+      box_api_key: boxApiKey,
+    });
+    expect(read).toBe("alpha\nbeta\n");
+  });
+
+  it("reads a bounded byte range", async () => {
+    const read = await tools.box_read.handler({
+      box_id: createdBoxId,
+      path: "e2e/note.txt",
+      offset: 0,
+      length: 5,
+      box_api_key: boxApiKey,
+    });
+    expect(read).toBe("alpha");
+  });
+
+  it("lists the directory it was given, not the workspace root", async () => {
+    const listed = text(
+      await tools.box_list.handler({ box_id: createdBoxId, path: "e2e", box_api_key: boxApiKey })
+    );
+    expect(listed).toContain("note.txt");
+  });
+
+  it("stats a path", async () => {
+    const stat = text(
+      await tools.box_stat.handler({
+        box_id: createdBoxId,
+        path: "e2e/note.txt",
+        box_api_key: boxApiKey,
+      })
+    );
+    expect(stat).toContain("file");
+  });
+
+  it("edits an exact match and refuses an ambiguous one", async () => {
+    await tools.box_edit.handler({
+      box_id: createdBoxId,
+      path: "e2e/note.txt",
+      old_string: "beta",
+      new_string: "BETA",
+      box_api_key: boxApiKey,
+    });
+    expect(
+      await tools.box_read.handler({
+        box_id: createdBoxId,
+        path: "e2e/note.txt",
+        box_api_key: boxApiKey,
+      })
+    ).toBe("alpha\nBETA\n");
+
+    await tools.box_write.handler({
+      box_id: createdBoxId,
+      path: "e2e/dup.txt",
+      content: "x\nx\n",
+      box_api_key: boxApiKey,
+    });
+    await expect(
+      tools.box_edit.handler({
+        box_id: createdBoxId,
+        path: "e2e/dup.txt",
+        old_string: "x",
+        new_string: "y",
+        box_api_key: boxApiKey,
+      })
+    ).rejects.toThrow(/appears 2 times/);
+  });
+
+  it("uploads a local file through multipart", async () => {
+    const local = `/tmp/mcp-e2e-upload-${Date.now()}.txt`;
+    await Bun.write(local, "uploaded from disk\n");
+    await tools.box_upload.handler({
+      box_id: createdBoxId,
+      files: [{ local_path: local, destination: "e2e/uploaded.txt" }],
+      box_api_key: boxApiKey,
+    });
+    expect(
+      await tools.box_read.handler({
+        box_id: createdBoxId,
+        path: "e2e/uploaded.txt",
+        box_api_key: boxApiKey,
+      })
+    ).toBe("uploaded from disk\n");
+  });
+
+  it("makes, renames and removes paths", async () => {
+    await tools.box_mkdir.handler({
+      box_id: createdBoxId,
+      path: "e2e/sub",
+      parents: true,
+      box_api_key: boxApiKey,
+    });
+    await tools.box_rename.handler({
+      box_id: createdBoxId,
+      from: "e2e/dup.txt",
+      to: "e2e/sub/dup.txt",
+      box_api_key: boxApiKey,
+    });
+    const listed = text(
+      await tools.box_list.handler({
+        box_id: createdBoxId,
+        path: "e2e/sub",
+        box_api_key: boxApiKey,
+      })
+    );
+    expect(listed).toContain("dup.txt");
+
+    await tools.box_remove.handler({
+      box_id: createdBoxId,
+      path: "e2e/sub",
+      recursive: true,
+      box_api_key: boxApiKey,
+    });
+  });
+});
+
+describe("box git", () => {
+  const repoFolder = "Hello-World";
+
+  it("clones a repository", async () => {
+    const result = text(
+      await tools.box_git.handler({
+        action: "clone",
+        box_id: createdBoxId,
+        repo: "https://github.com/octocat/Hello-World",
+        box_api_key: boxApiKey,
+      })
+    );
+    expect(result).toContain("Cloned");
+  });
+
+  it("searches tracked files with git grep", async () => {
+    const result = text(
+      await tools.box_git.handler({
+        action: "exec",
+        box_id: createdBoxId,
+        folder: repoFolder,
+        args: ["grep", "-n", "Hello"],
+        box_api_key: boxApiKey,
+      })
+    );
+    expect(result).toContain("README");
+  });
+
+  it("explains a git failure caused by a missing folder", async () => {
+    const result = text(
+      await tools.box_git.handler({
+        action: "exec",
+        box_id: createdBoxId,
+        args: ["grep", "-n", "Hello"],
+        box_api_key: boxApiKey,
+      })
+    );
+    expect(result).toContain("no 'folder' was given");
+  });
+
+  it("checks out a branch, commits, and reports status", async () => {
+    await tools.box_git.handler({
+      action: "checkout",
+      box_id: createdBoxId,
+      folder: repoFolder,
+      branch: "e2e/mcp",
+      box_api_key: boxApiKey,
+    });
+    await tools.box_write.handler({
+      box_id: createdBoxId,
+      path: `${repoFolder}/e2e.md`,
+      content: "e2e\n",
+      box_api_key: boxApiKey,
+    });
+    await tools.box_git.handler({
+      action: "exec",
+      box_id: createdBoxId,
+      folder: repoFolder,
+      args: ["add", "-A"],
+      box_api_key: boxApiKey,
+    });
+    const committed = text(
+      await tools.box_git.handler({
+        action: "commit",
+        box_id: createdBoxId,
+        folder: repoFolder,
+        message: "e2e commit",
+        author_name: "MCP E2E",
+        author_email: "e2e@upstash.com",
+        box_api_key: boxApiKey,
+      })
+    );
+    expect(committed).toContain("sha");
+
+    const branch = text(
+      await tools.box_git.handler({
+        action: "exec",
+        box_id: createdBoxId,
+        folder: repoFolder,
+        args: ["rev-parse", "--abbrev-ref", "HEAD"],
+        box_api_key: boxApiKey,
+      })
+    );
+    expect(branch).toContain("e2e/mcp");
+
+    const status = text(
+      await tools.box_git.handler({
+        action: "status",
+        box_id: createdBoxId,
+        folder: repoFolder,
+        box_api_key: boxApiKey,
+      })
+    );
+    expect(status).toContain("status");
+  });
 });
 
 describe("box_manage cleanup", () => {

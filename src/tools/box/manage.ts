@@ -174,7 +174,8 @@ Use a non-ephemeral box when you pass clone_repo; ephemeral creation takes a dif
               "Shell command run once when the box starts. Requires keep_alive=true. For one-off setup on a normal box, run box_exec instead"
             ),
           labels: z
-            .array(z.string())
+            .array(z.string().max(20))
+            .max(5)
             .optional()
             .describe("Labels for organizing boxes (max 5, each up to 20 characters)"),
           git_user_name: z

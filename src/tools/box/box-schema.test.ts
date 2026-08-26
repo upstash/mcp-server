@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach } from "bun:test";
-import { rm, writeFile } from "node:fs/promises";
+import { mkdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { boxManageTool, buildCreateBody, clonedRepoDir } from "./manage";
 import { boxFilesTool } from "./files";
@@ -313,6 +313,27 @@ describe("upload path confinement", () => {
     } finally {
       await rm(file, { force: true });
     }
+  });
+
+  it("allows an in-root name that merely begins with two dots", async () => {
+    // "..cache" is inside the root; only a real parent component escapes.
+    const dir = `/tmp/upload-dotdot-${Date.now()}/..cache`;
+    const file = `${dir}/probe.txt`;
+    await mkdir(dir, { recursive: true });
+    await writeFile(file, "probe\n");
+    try {
+      config.uploadRoots = [path.dirname(dir)];
+      await expect(resolveUploadPath(file)).resolves.toContain("..cache");
+    } finally {
+      await rm(path.dirname(dir), { recursive: true, force: true });
+    }
+  });
+
+  it("still rejects an actual parent escape", async () => {
+    config.uploadRoots = ["/tmp/upload-root-x"];
+    await expect(resolveUploadPath("/tmp/upload-root-x/../escaped")).rejects.toThrow(
+      /outside the directories/
+    );
   });
 
   it("treats the filesystem root as a valid root", async () => {

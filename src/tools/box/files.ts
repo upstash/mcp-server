@@ -443,7 +443,11 @@ export async function resolveUploadPath(requested: string): Promise<string> {
   );
   const allowed = canonicalRoots.some((root) => {
     const relative = path.relative(root, real);
-    return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));
+    if (relative === "") return true;
+    // Only an actual parent component escapes; a directory named "..cache" is
+    // inside the root despite starting with two dots.
+    const escapes = relative === ".." || relative.startsWith(`..${path.sep}`);
+    return !escapes && !path.isAbsolute(relative);
   });
   if (!allowed) {
     throw new Error(

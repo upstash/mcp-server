@@ -434,7 +434,17 @@ export async function resolveUploadPath(requested: string): Promise<string> {
   // A missing file is reported by the caller's own stat; only resolve links
   // when the path exists, so the error stays "no such file".
   const real = await realpath(resolved).catch(() => resolved);
-  const allowed = roots.some((root) => real === root || real.startsWith(root + path.sep));
+  // Roots are canonicalized too: on macOS /tmp is a link to /private/tmp, so a
+  // lexical root would reject every real file beneath it. Containment is by
+  // path relation rather than string prefix, which also keeps "/" working and
+  // keeps a sibling that merely shares the prefix out.
+  const canonicalRoots = await Promise.all(
+    roots.map(async (root) => await realpath(root).catch(() => root))
+  );
+  const allowed = canonicalRoots.some((root) => {
+    const relative = path.relative(root, real);
+    return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));
+  });
   if (!allowed) {
     throw new Error(
       `${requested} is outside the directories this server may upload from (${roots.join(", ")})`

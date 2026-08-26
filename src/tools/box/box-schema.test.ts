@@ -1,4 +1,6 @@
 import { describe, it, expect, afterEach } from "bun:test";
+import { rm, writeFile } from "node:fs/promises";
+import path from "node:path";
 import { boxManageTool, buildCreateBody, clonedRepoDir } from "./manage";
 import { boxFilesTool } from "./files";
 import { config } from "../../config";
@@ -297,8 +299,25 @@ describe("upload path confinement", () => {
     );
   });
 
-  it("allows a path inside a configured root", async () => {
-    config.uploadRoots = ["/tmp"];
-    await expect(resolveUploadPath("/tmp/some-file.txt")).resolves.toBe("/tmp/some-file.txt");
+  it("allows a real file under a symlinked root", async () => {
+    // /tmp is a link to /private/tmp on macOS, so canonicalizing only the
+    // candidate would reject this: the file resolves under /private/tmp while
+    // the root stayed /tmp. The previous version of this test used a path that
+    // did not exist, which skipped realpath entirely and passed either way.
+    const file = `/tmp/upload-root-probe-${Date.now()}.txt`;
+    await writeFile(file, "probe\n");
+    try {
+      config.uploadRoots = ["/tmp"];
+      const resolved = await resolveUploadPath(file);
+      expect(resolved.endsWith(path.basename(file))).toBe(true);
+    } finally {
+      await rm(file, { force: true });
+    }
+  });
+
+  it("treats the filesystem root as a valid root", async () => {
+    // A prefix check would compare against "//" and reject everything.
+    config.uploadRoots = ["/"];
+    await expect(resolveUploadPath("/etc/hosts")).resolves.toContain("hosts");
   });
 });

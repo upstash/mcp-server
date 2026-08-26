@@ -83,22 +83,34 @@ async function main() {
   // Get credentials from CLI options or environment
   const email = cliOptions.email || process.env.UPSTASH_EMAIL;
   const apiKey = cliOptions.apiKey || process.env.UPSTASH_API_KEY;
+  const boxApiKey = cliOptions.boxApiKey || process.env.UPSTASH_BOX_API_KEY || "";
 
-  if (!email || !apiKey) {
+  // Box is a separate credential on a separate API, so a Box-only customer may
+  // have no account key at all. Requiring one would block them from a server
+  // whose Box tools never touch the account API.
+  const boxOnly = Boolean(boxApiKey) && (!email || !apiKey);
+
+  if (!boxOnly && (!email || !apiKey)) {
     console.error(
-      "Missing required credentials. Provide --email and --api-key or set UPSTASH_EMAIL and UPSTASH_API_KEY environment variables."
+      "Missing required credentials. Provide --email and --api-key (or set UPSTASH_EMAIL and UPSTASH_API_KEY) for Redis, QStash and Workflow tools, or --box-api-key alone to use only the Upstash Box tools."
     );
     process.exit(1);
   }
 
   // Set config
-  config.email = email;
-  config.apiKey = apiKey;
-  config.boxApiKey = cliOptions.boxApiKey || process.env.UPSTASH_BOX_API_KEY || "";
+  config.email = email ?? "";
+  config.apiKey = apiKey ?? "";
+  config.boxApiKey = boxApiKey;
   config.disableTelemetry = cliOptions.disableTelemetry ?? false;
 
-  // Test connection
-  await testConnection();
+  // Only meaningful for the account API; a Box-only run has nothing to test here.
+  if (boxOnly) {
+    console.error(
+      "Started with a Box API key only: Upstash Box tools are available, Redis/QStash/Workflow tools are not."
+    );
+  } else {
+    await testConnection();
+  }
 
   const transportType = TRANSPORT_TYPE;
 

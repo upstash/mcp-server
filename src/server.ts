@@ -6,6 +6,25 @@ import { handlerResponseToCallResult } from "./tool";
 import z from "zod";
 import { DEBUG } from ".";
 
+/**
+ * Session-level guidance sent in the initialize result.
+ *
+ * This server also serves Redis and QStash, so the Box guidance is scoped to
+ * tasks that involve a box rather than asserting anything about the session as
+ * a whole. It exists because a box's filesystem is remote while the client's own
+ * file and shell tools are local, and nothing in the protocol reports when the
+ * two get mixed.
+ */
+const INSTRUCTIONS = `Manage Upstash Redis, QStash, and Box from this session.
+
+Working inside an Upstash Box:
+
+A box is a remote Linux container. Its filesystem is not this machine's filesystem. Once a task is meant to happen in a box, do every step of it with the box tools: box_read, box_write and box_edit for files; box_git for git operations and for search (action 'exec' with ["grep", ...] or ["ls-files"]); box_exec for commands; box_preview to reach a server running inside the box.
+
+Your own Read, Write, Edit and Bash tools act on the user's machine. Mixing them with box tools in one task splits it across two filesystems: an edit lands on one side while a command runs on the other, and neither side reports the mismatch. Decide which machine a task belongs to and stay there.
+
+A box is addressed by box_id. Create one with box_manage — a workspace box needs no agent and no model — then reuse that same box_id for the rest of the task.`;
+
 // Function to create a new server instance with all tools registered
 export function createServerInstance() {
   const server = new McpServer(
@@ -15,12 +34,21 @@ export function createServerInstance() {
         tools: {},
         logging: {},
       },
+      instructions: INSTRUCTIONS,
     }
   );
 
-  const filteredTools = config.readonly
+  const availableTools = config.readonly
     ? Object.fromEntries(Object.entries(tools).filter(([_, tool]) => tool.readonly))
     : tools;
+
+  // Started with a Box key and no account credentials: Redis, QStash and
+  // Workflow tools have nothing to authenticate with, so offering them only
+  // buys a round trip that fails.
+  const boxOnly = !config.email || !config.apiKey;
+  const filteredTools = boxOnly
+    ? Object.fromEntries(Object.entries(availableTools).filter(([name]) => name.startsWith("box_")))
+    : availableTools;
 
   const toolsList = Object.entries(filteredTools).map(([name, tool]) => ({
     name,

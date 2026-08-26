@@ -23,6 +23,14 @@ export type UpstashRequest = {
    * Optional QStash token - if provided, will use Bearer auth instead of Basic auth
    */
   qstashToken?: string;
+  /**
+   * Abort the request after this many milliseconds.
+   *
+   * There is no default: the coordinator holds a shell exec open for up to an
+   * hour, so a long-running command must be able to finish. Callers that can
+   * hang (box_exec) set their own bound.
+   */
+  timeoutMs?: number;
 };
 
 export type HttpClientConfig = {
@@ -52,9 +60,16 @@ export class HttpClient {
   public async post<TResponse>(
     path: string[] | string,
     body?: unknown,
-    headers?: Record<string, string>
+    headers?: Record<string, string>,
+    options?: { timeoutMs?: number }
   ): Promise<TResponse> {
-    return this.requestWithMiddleware<TResponse>({ method: "POST", path, body, headers });
+    return this.requestWithMiddleware<TResponse>({
+      method: "POST",
+      path,
+      body,
+      headers,
+      ...(options?.timeoutMs === undefined ? {} : { timeoutMs: options.timeoutMs }),
+    });
   }
 
   public async put<TResponse>(
@@ -133,20 +148,40 @@ export class HttpClient {
     };
 
     if (req.method !== "GET" && req.body !== undefined) {
-      init.body = JSON.stringify(req.body);
+      if (req.body instanceof FormData) {
+        // Multipart: fetch has to set Content-Type itself so the boundary
+        // matches the body it encodes.
+        init.body = req.body;
+        delete (init.headers as Record<string, string>)["Content-Type"];
+      } else {
+        init.body = JSON.stringify(req.body);
+      }
     }
 
     log("-> sending request", {
       url,
       ...init,
+      ...(init.body instanceof FormData ? { body: "<multipart form data>" } : {}),
       headers: {
         ...init.headers,
         Authorization: "***",
       },
     });
 
+    if (req.timeoutMs !== undefined) {
+      init.signal = AbortSignal.timeout(req.timeoutMs);
+    }
+
     // fetch is defined by isomorphic fetch
-    const res = await fetch(url, init);
+    const res = await fetch(url, init).catch((error: unknown) => {
+      // An aborted fetch surfaces as a bare TimeoutError; say what timed out.
+      if (error instanceof Error && error.name === "TimeoutError") {
+        throw new Error(
+          `Request timed out after ${String(req.timeoutMs)}ms: ${req.method} ${url.split("?")[0]}`
+        );
+      }
+      throw error;
+    });
     if (!res.ok) {
       throw new Error(`Request failed (${res.status} ${res.statusText}): ${await res.text()}`);
     }

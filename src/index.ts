@@ -5,7 +5,8 @@ import { serveStdio } from "@modelcontextprotocol/server/stdio";
 import { toNodeHandler } from "@modelcontextprotocol/node";
 import { Command } from "commander";
 // eslint-disable-next-line unicorn/prefer-node-protocol
-import { createServer, type IncomingMessage } from "http";
+import path from "node:path";
+import { createServer, type IncomingMessage } from "node:http";
 import { createServerInstance } from "./server.js";
 import { config } from "./config";
 import { testConnection } from "./test-connection";
@@ -33,6 +34,10 @@ const program = new Command()
   .option("--box-api-key <key>", "Upstash Box API key (optional)")
   .option("--debug", "Enable debug mode")
   .option("--disable-telemetry", "Disable telemetry headers sent to Upstash APIs")
+  .option(
+    "--upload-root <path...>",
+    "Restrict box_upload to these directories. Required to offer box_upload over --transport http, which has no authentication of its own"
+  )
   .allowUnknownOption(); // let other wrappers pass through extra flags
 
 program.parse(argv, { from: "user" });
@@ -45,6 +50,7 @@ const cliOptions = program.opts<{
   boxApiKey?: string;
   debug?: boolean;
   disableTelemetry?: boolean;
+  uploadRoot?: string[];
 }>();
 
 export const DEBUG = cliOptions.debug ?? false;
@@ -102,6 +108,8 @@ async function main() {
   config.apiKey = apiKey ?? "";
   config.boxApiKey = boxApiKey;
   config.disableTelemetry = cliOptions.disableTelemetry ?? false;
+  config.transport = TRANSPORT_TYPE;
+  config.uploadRoots = (cliOptions.uploadRoot ?? []).map((root) => path.resolve(root));
 
   // Only meaningful for the account API; a Box-only run has nothing to test here.
   if (boxOnly) {

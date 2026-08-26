@@ -46,9 +46,17 @@ export function createServerInstance() {
   // Workflow tools have nothing to authenticate with, so offering them only
   // buys a round trip that fails.
   const boxOnly = !config.email || !config.apiKey;
-  const filteredTools = boxOnly
+  const scopedTools = boxOnly
     ? Object.fromEntries(Object.entries(availableTools).filter(([name]) => name.startsWith("box_")))
     : availableTools;
+
+  // box_upload reads the server host's filesystem on behalf of whoever calls
+  // it, and the HTTP transport authenticates nobody, so it is only offered
+  // there once an operator has named the directories it may read.
+  const uploadAllowed = config.transport !== "http" || config.uploadRoots.length > 0;
+  const filteredTools = uploadAllowed
+    ? scopedTools
+    : Object.fromEntries(Object.entries(scopedTools).filter(([name]) => name !== "box_upload"));
 
   const toolsList = Object.entries(filteredTools).map(([name, tool]) => ({
     name,

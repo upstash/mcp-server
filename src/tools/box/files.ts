@@ -1,8 +1,9 @@
 import { openAsBlob } from "node:fs";
-import { stat as statLocal } from "node:fs/promises";
+import { realpath, stat as statLocal } from "node:fs/promises";
 import path from "node:path";
 import { z } from "zod";
 import { json, tool } from "../helpers";
+import { config } from "../../config";
 import { buildBoxCommon } from "./common";
 import { getBoxClient } from "./utils";
 
@@ -153,7 +154,7 @@ Long results are truncated before you see them, and the truncation is marked. Fo
       return z.object({
         box_id: z.string().describe("The box holding the file"),
         path: z.string().describe("File path inside the box"),
-        old_string: z.string().describe("Exact text to replace; must appear exactly once"),
+        old_string: z.string().min(1).describe("Exact text to replace; must appear exactly once"),
         new_string: z.string().describe("Replacement text"),
         ...buildBoxCommon(),
       });
@@ -264,7 +265,7 @@ Up to 10 files per call, 100 MB each.`,
       const form = new FormData();
       const summary: string[] = [];
       for (const entry of files) {
-        const localPath = path.resolve(entry.local_path);
+        const localPath = await resolveUploadPath(entry.local_path);
         const info = await statLocal(localPath).catch(() => {});
         if (info === undefined)
           throw new Error(`No such file on the machine running this server: ${localPath}`);
@@ -320,6 +321,9 @@ export function applyEdit(
   newString: string,
   path: string
 ): { text: string; message: string } {
+  if (oldString === "") {
+    throw new Error("old_string must not be empty; give the exact text to replace");
+  }
   if (oldString === newString) {
     throw new Error("old_string and new_string are identical; nothing to change");
   }
@@ -397,6 +401,9 @@ export function buildReadQuery(input: {
  * @returns how many positions the needle starts at.
  */
 export function countOccurrences(content: string, needle: string): number {
+  // indexOf("") returns the clamped index rather than -1, so an empty needle
+  // would never terminate the loop below.
+  if (needle === "") return 0;
   let count = 0;
   for (
     let index = content.indexOf(needle);
@@ -406,4 +413,32 @@ export function countOccurrences(content: string, needle: string): number {
     count++;
   }
   return count;
+}
+
+/**
+ * Resolve a path this tool is allowed to read.
+ *
+ * The caller of an MCP tool chooses both the path and the destination box, so
+ * on a transport that does not authenticate its callers this would be an
+ * arbitrary read of the server host into a box the caller controls. Symlinks
+ * are resolved before the check so a link inside a root cannot point out of it.
+ * @param requested - path as given by the caller.
+ * @returns the resolved absolute path.
+ * @throws when the path escapes every configured root.
+ */
+export async function resolveUploadPath(requested: string): Promise<string> {
+  const resolved = path.resolve(requested);
+  const roots = config.uploadRoots;
+  if (roots.length === 0) return resolved;
+
+  // A missing file is reported by the caller's own stat; only resolve links
+  // when the path exists, so the error stays "no such file".
+  const real = await realpath(resolved).catch(() => resolved);
+  const allowed = roots.some((root) => real === root || real.startsWith(root + path.sep));
+  if (!allowed) {
+    throw new Error(
+      `${requested} is outside the directories this server may upload from (${roots.join(", ")})`
+    );
+  }
+  return real;
 }

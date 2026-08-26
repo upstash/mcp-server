@@ -1,7 +1,15 @@
-import { describe, it, expect } from "bun:test";
+import { describe, it, expect, afterEach } from "bun:test";
 import { boxManageTool, buildCreateBody, clonedRepoDir } from "./manage";
 import { boxFilesTool } from "./files";
-import { applyEdit, buildListQuery, buildReadQuery, countOccurrences, unwrapFiles } from "./files";
+import { config } from "../../config";
+import {
+  applyEdit,
+  buildListQuery,
+  buildReadQuery,
+  countOccurrences,
+  resolveUploadPath,
+  unwrapFiles,
+} from "./files";
 
 /**
  * Pure schema/serialization checks. These must not touch the network: the live
@@ -243,5 +251,54 @@ describe("documented limits are enforced by the schema", () => {
       schema.safeParse({ box_api_key: "box_test", box_id: "b", files: files.slice(0, 10) }).success
     ).toBe(true);
     expect(schema.safeParse({ box_api_key: "box_test", box_id: "b", files }).success).toBe(false);
+  });
+});
+
+describe("empty search string", () => {
+  it("counts nothing rather than looping forever", () => {
+    // indexOf("", n) returns the clamped index, never -1, so an unguarded loop
+    // here would pin the process.
+    expect(countOccurrences("abc", "")).toBe(0);
+  });
+
+  it("is rejected by applyEdit", () => {
+    expect(() => applyEdit("abc", "", "x", "f.txt")).toThrow(/must not be empty/);
+  });
+
+  it("is rejected by the schema", () => {
+    const schema = boxFilesTool.box_edit.inputSchema!;
+    const base = { box_api_key: "box_test", box_id: "b", path: "a", new_string: "x" };
+    expect(schema.safeParse({ ...base, old_string: "" }).success).toBe(false);
+    expect(schema.safeParse({ ...base, old_string: "a" }).success).toBe(true);
+  });
+});
+
+describe("upload path confinement", () => {
+  const originalRoots = [...config.uploadRoots];
+  afterEach(() => {
+    config.uploadRoots = [...originalRoots];
+  });
+
+  it("allows any path when no roots are configured", async () => {
+    config.uploadRoots = [];
+    await expect(resolveUploadPath("/etc/hosts")).resolves.toContain("hosts");
+  });
+
+  it("rejects a path outside every configured root", async () => {
+    config.uploadRoots = ["/tmp/allowed-root"];
+    await expect(resolveUploadPath("/etc/passwd")).rejects.toThrow(/outside the directories/);
+  });
+
+  it("rejects a sibling directory that merely shares a prefix", async () => {
+    // "/tmp/allowed-root-evil" must not pass a naive startsWith check.
+    config.uploadRoots = ["/tmp/allowed-root"];
+    await expect(resolveUploadPath("/tmp/allowed-root-evil/secret")).rejects.toThrow(
+      /outside the directories/
+    );
+  });
+
+  it("allows a path inside a configured root", async () => {
+    config.uploadRoots = ["/tmp"];
+    await expect(resolveUploadPath("/tmp/some-file.txt")).resolves.toBe("/tmp/some-file.txt");
   });
 });

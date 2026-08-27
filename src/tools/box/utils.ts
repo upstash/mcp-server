@@ -1,6 +1,7 @@
 import { config } from "../../config";
 import { HttpClient } from "../../http";
-import { BOX_BASE_URL } from "./common";
+
+const BOX_BASE_URL = "https://us-east-1.box.upstash.com";
 
 export function getBoxClient(): HttpClient {
   const apiKey = config.boxApiKey;

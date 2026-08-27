@@ -2,6 +2,7 @@ import { McpServer } from "@modelcontextprotocol/server";
 import { config } from "./config";
 import { log } from "./log";
 import { tools } from "./tools";
+import { BOX_UPLOAD_TOOL } from "./tools/box/files";
 import { handlerResponseToCallResult } from "./tool";
 import z from "zod";
 import { DEBUG } from ".";
@@ -60,7 +61,7 @@ export function createServerInstance() {
   const uploadAllowed = config.transport !== "http" || config.uploadRoots.length > 0;
   const filteredTools = uploadAllowed
     ? scopedTools
-    : Object.fromEntries(Object.entries(scopedTools).filter(([name]) => name !== "box_upload"));
+    : Object.fromEntries(Object.entries(scopedTools).filter(([name]) => name !== BOX_UPLOAD_TOOL));
 
   const toolsList = Object.entries(filteredTools).map(([name, tool]) => ({
     name,

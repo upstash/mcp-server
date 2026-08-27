@@ -6,6 +6,9 @@ import { json, tool } from "../helpers";
 import { config } from "../../config";
 import { getBoxClient } from "./utils";
 
+/** Name of the upload tool; the server filters it out by name on the HTTP transport. */
+export const BOX_UPLOAD_TOOL = "box_upload";
+
 type ReadFileResponse = { content: string };
 type FileEntry = { name: string; path: string; size: number; is_dir: boolean; mod_time: string };
 /** The list endpoint wraps its result and may return null instead of an empty array. */
@@ -230,7 +233,7 @@ Long results are truncated before you see them, and the truncation is marked. Fo
       return `Removed ${path}`;
     },
   }),
-  box_upload: tool({
+  [BOX_UPLOAD_TOOL]: tool({
     box: true,
     description: `Copy files from the machine RUNNING THIS SERVER into an Upstash Box. This is the one box tool that reads local paths, which is how uncommitted local work gets into a workspace (a clone only brings what is pushed).
 

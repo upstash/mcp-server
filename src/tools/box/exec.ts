@@ -1,6 +1,5 @@
 import { z } from "zod";
 import { tool } from "../helpers";
-import { buildBoxCommon } from "./common";
 import { getBoxClient } from "./utils";
 type ExecResponse = { exit_code: number; output?: string; error?: string };
 
@@ -15,6 +14,7 @@ const DEFAULT_EXEC_TIMEOUT_MS = 600_000;
 
 export const boxExecTool = {
   box_exec: tool({
+    box: true,
     description: `Run a shell command inside an Upstash Box container. Runs in the box, not on your local machine — your own Bash tool runs on the user's machine and cannot see the box's files.
 
 Prefer the purpose-built tools where they fit: box_read / box_write / box_edit for files, box_git for git (including search via git grep / git ls-files). Use this for everything else — package installs, builds, test runs, arbitrary commands.
@@ -35,12 +35,11 @@ Each call is a fresh shell, so 'cd' and environment variables do NOT carry over 
           .describe(
             `Stop waiting after this many milliseconds (default ${DEFAULT_EXEC_TIMEOUT_MS}). This abandons the HTTP request only — the command keeps running inside the box, so retrying a timed-out command can leave two copies running`
           ),
-        ...buildBoxCommon(),
       });
     },
     handler: async (params) => {
       const { box_id, command, folder, timeout_ms } = params;
-      const client = getBoxClient(params);
+      const client = getBoxClient();
 
       const body: Record<string, unknown> = { command };
       if (folder) body.folder = folder;

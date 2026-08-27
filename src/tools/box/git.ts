@@ -1,6 +1,5 @@
 import { z } from "zod";
 import { json, tool } from "../helpers";
-import { buildBoxCommon } from "./common";
 import { getBoxClient } from "./utils";
 
 type GitExecResponse = { output?: string; error?: string; exit_code?: number };
@@ -8,13 +7,14 @@ type CreatePRResponse = { url?: string };
 
 export const boxGitTool = {
   box_git: tool({
+    box: true,
     description: `Run git operations inside an Upstash Box. Operates on the repository INSIDE the box, not your local checkout — a local git command in Bash would act on a different repository.
 
 Actions: clone, status, diff, commit, checkout, push, create_pr, exec.
 
 'exec' is also the search path for a box: pass git arguments WITHOUT the leading 'git', e.g. args ["grep","-n","TODO"] to search tracked files, or args ["ls-files"] to list them. Both respect .gitignore, which plain find/grep do not.
 
-IMPORTANT: 'folder' defaults to the workspace root, which is usually NOT the repository. A cloned repo sits in a subdirectory named after it (cloning github.com/octocat/Hello-World gives 'Hello-World'), so pass that as 'folder' for every action. Use box_list to see it if you are unsure.`,
+IMPORTANT: 'folder' defaults to the workspace root, which is usually NOT the repository. A cloned repo sits in a subdirectory named after it (cloning github.com/octocat/Hello-World gives 'Hello-World'), so pass that as 'folder' for every action. Use box_list_files to see it if you are unsure.`,
     get inputSchema() {
       return z.object({
         action: z
@@ -49,12 +49,11 @@ IMPORTANT: 'folder' defaults to the workspace root, which is usually NOT the rep
           .array(z.string())
           .optional()
           .describe("git arguments without the leading 'git' (action: exec)"),
-        ...buildBoxCommon(),
       });
     },
     handler: async (params) => {
       const { action, box_id, folder } = params;
-      const client = getBoxClient(params);
+      const client = getBoxClient();
       const base = `v2/box/${box_id}/git`;
       const withFolder = (body: Record<string, unknown>) =>
         folder === undefined ? body : { ...body, folder };
@@ -78,7 +77,7 @@ IMPORTANT: 'folder' defaults to the workspace root, which is usually NOT the rep
           // tell "no changes" apart from "not a repository".
           if ((status.status ?? "") === "" && folder === undefined) {
             return [
-              "Empty status. This ran in the workspace root with no 'folder', so it means either a clean tree or no repository there at all — pass the repository subdirectory to be sure (box_list shows it).",
+              "Empty status. This ran in the workspace root with no 'folder', so it means either a clean tree or no repository there at all — pass the repository subdirectory to be sure (box_list_files shows it).",
               json(status),
             ];
           }
@@ -145,7 +144,7 @@ IMPORTANT: 'folder' defaults to the workspace root, which is usually NOT the rep
             // folder was left at the workspace root instead of the clone.
             const hint =
               res.exit_code === 128 && folder === undefined
-                ? " — no 'folder' was given, so this ran in the workspace root; pass the repository subdirectory (box_list shows it)"
+                ? " — no 'folder' was given, so this ran in the workspace root; pass the repository subdirectory (box_list_files shows it)"
                 : "";
             return [`git ${params.args.join(" ")} exited ${res.exit_code}${hint}`, output];
           }

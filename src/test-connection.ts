@@ -1,6 +1,7 @@
 import { config } from "./config";
 import { http } from "./http";
 import { log } from "./log";
+import { getBoxClient } from "./tools/box/utils";
 import type { RedisDatabase } from "./tools/redis/types";
 
 const READONLY_ERROR = "Readonly API key";
@@ -34,4 +35,28 @@ export async function testConnection() {
   }
 
   log("✅ Connection to Upstash API is successful");
+}
+
+/**
+ * Verifies the configured Box API key against the Box API. Box is a separate
+ * credential on a separate API, so this is independent of {@link testConnection}.
+ */
+export async function testBoxConnection() {
+  log("🧪 Testing connection to Upstash Box API");
+
+  let boxes: unknown;
+  try {
+    boxes = await getBoxClient().get<unknown[]>("v2/box");
+  } catch (error) {
+    log(
+      "❌ Connection to Upstash Box API failed. Please check your Box API key. Error: ",
+      error instanceof Error ? error.message : String(error)
+    );
+    throw error;
+  }
+
+  if (!Array.isArray(boxes))
+    throw new Error("Invalid response from Upstash Box API. Check your Box API key.");
+
+  log("✅ Connection to Upstash Box API is successful");
 }

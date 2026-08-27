@@ -1,10 +1,10 @@
 import { z } from "zod";
 import { json, tool } from "../helpers";
-import { buildBoxCommon } from "./common";
 import { getBoxClient } from "./utils";
 
 export const boxLogsTool = {
   box_logs: tool({
+    box: true,
     description: `Get logs from an Upstash Box container. Useful for debugging what happened inside the box. Returns timestamped log entries from the system, user, and agent sources.`,
     get inputSchema() {
       return z.object({
@@ -20,12 +20,11 @@ export const boxLogsTool = {
           .optional()
           .default(100)
           .describe("Maximum number of log entries to return (max 1000, default: 100)"),
-        ...buildBoxCommon(),
       });
     },
     handler: async (params) => {
       const { box_id, offset, limit } = params;
-      const client = getBoxClient(params);
+      const client = getBoxClient();
 
       const response = await client.get<{ logs: unknown[] }>(`v2/box/${box_id}/logs`, {
         offset,

@@ -1,23 +1,22 @@
 import { z } from "zod";
 import { json, tool } from "../helpers";
-import { buildBoxCommon } from "./common";
 import { getBoxClient } from "./utils";
 type RunRef = { status: string };
 
 export const boxRunsTool = {
   box_runs: tool({
+    box: true,
     description: `List, get details, or cancel runs (execution history) for an Upstash Box. Useful for debugging past agent runs and shell executions, checking their status, output, token usage, and costs.`,
     get inputSchema() {
       return z.object({
         action: z.enum(["list", "get", "cancel"]).describe("The action to perform"),
         box_id: z.string().describe("The box ID"),
         run_id: z.string().optional().describe("Run ID (required for get and cancel actions)"),
-        ...buildBoxCommon(),
       });
     },
     handler: async (params) => {
       const { action, box_id, run_id } = params;
-      const client = getBoxClient(params);
+      const client = getBoxClient();
 
       switch (action) {
         case "list": {

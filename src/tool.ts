@@ -19,6 +19,13 @@ export type CustomTool<TSchema extends z.ZodType = z.ZodType> = {
   readonly?: boolean;
 
   /**
+   * Whether this tool talks to the Upstash Box API. Box tools authenticate
+   * with the Box API key and are only offered when one is configured; every
+   * other tool needs the account email and API key.
+   */
+  box?: boolean;
+
+  /**
    * Whether this tool's result contains secrets (e.g. live database
    * credentials). The server never logs the result of a sensitive tool.
    *

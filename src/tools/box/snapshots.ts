@@ -1,12 +1,12 @@
 import { z } from "zod";
 import { json, tool } from "../helpers";
-import { buildBoxCommon } from "./common";
 import { getBoxClient } from "./utils";
 type BoxRef = { id: string; status: string };
 type SnapshotRef = { id: string; status: string };
 
 export const boxSnapshotsTool = {
   box_snapshots: tool({
+    box: true,
     description: `Manage Upstash Box snapshots. Create full filesystem snapshots of a box, list snapshots, delete them, or restore a box from a snapshot.`,
     get inputSchema() {
       return z.object({
@@ -40,12 +40,11 @@ export const boxSnapshotsTool = {
           .number()
           .optional()
           .describe("TTL in seconds for the restored ephemeral box (max 259200)"),
-        ...buildBoxCommon(),
       });
     },
     handler: async (params) => {
       const { action, box_id, snapshot_id } = params;
-      const client = getBoxClient(params);
+      const client = getBoxClient();
 
       switch (action) {
         case "create": {

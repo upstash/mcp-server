@@ -9,7 +9,7 @@ import path from "node:path";
 import { createServer, type IncomingMessage } from "node:http";
 import { createServerInstance } from "./server.js";
 import { config } from "./config";
-import { testConnection } from "./test-connection";
+import { testBoxConnection, testConnection } from "./test-connection";
 import { initDebugLog } from "./log";
 import "dotenv/config";
 
@@ -94,9 +94,9 @@ async function main() {
   // Box is a separate credential on a separate API, so a Box-only customer may
   // have no account key at all. Requiring one would block them from a server
   // whose Box tools never touch the account API.
-  const boxOnly = Boolean(boxApiKey) && (!email || !apiKey);
+  const hasAccountKey = Boolean(email && apiKey);
 
-  if (!boxOnly && (!email || !apiKey)) {
+  if (!hasAccountKey && !boxApiKey) {
     console.error(
       "Missing required credentials. Provide --email and --api-key (or set UPSTASH_EMAIL and UPSTASH_API_KEY) for Redis, QStash and Workflow tools, or --box-api-key alone to use only the Upstash Box tools."
     );
@@ -111,14 +111,9 @@ async function main() {
   config.transport = TRANSPORT_TYPE;
   config.uploadRoots = (cliOptions.uploadRoot ?? []).map((root) => path.resolve(root));
 
-  // Only meaningful for the account API; a Box-only run has nothing to test here.
-  if (boxOnly) {
-    console.error(
-      "Started with a Box API key only: Upstash Box tools are available, Redis/QStash/Workflow tools are not."
-    );
-  } else {
-    await testConnection();
-  }
+  // Each credential is checked against its own API, independently of the other.
+  if (hasAccountKey) await testConnection();
+  if (boxApiKey) await testBoxConnection();
 
   const transportType = TRANSPORT_TYPE;
 

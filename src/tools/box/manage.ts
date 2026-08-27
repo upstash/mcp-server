@@ -1,6 +1,5 @@
 import { z } from "zod";
 import { json, tool } from "../helpers";
-import { buildBoxCommon } from "./common";
 import { getBoxClient } from "./utils";
 type BoxRef = { id: string; status: string };
 
@@ -100,6 +99,7 @@ export function buildCreateBody(params: CreateBoxParams): Record<string, unknown
 
 export const boxManageTool = {
   box_manage: tool({
+    box: true,
     description: `Manage Upstash Box containers: create, list, get, delete, pause, resume, fork. A box is an isolated cloud Linux container with its own filesystem, reached only through the box tools. Keep the returned box_id and reuse it for every later call in the task.
 
 By default a box runs NO agent — it is a plain remote workspace you drive yourself with box_exec, box_git and the box file tools. That is the normal case for using a box as a workspace. Only set 'agent' when you want an AI agent (Claude Code, Codex, opencode) running inside the box, which also requires 'model'.
@@ -108,7 +108,7 @@ A box without keep_alive is paused automatically after it goes idle (1 hour on t
 
 Creating is not instant, and 'clone_repo' finishes even later:
 1. create returns immediately with status 'creating' — file and exec calls fail until the container exists, so poll with action 'get' until the status is 'idle'.
-2. The clone only STARTS once the box reports idle, so an idle box can still have an empty workspace. After that, poll box_list until the repository directory appears — do not use box_git status to check, because an empty status means 'no changes' AND 'not a repository'.
+2. The clone only STARTS once the box reports idle, so an idle box can still have an empty workspace. After that, poll box_list_files until the repository directory appears — do not use box_git status to check, because an empty status means 'no changes' AND 'not a repository'.
 3. A clone that fails leaves a working but EMPTY box — create still reported success. If the workspace stays empty, run box_git clone yourself and read the error.
 Use a non-ephemeral box when you pass clone_repo; ephemeral creation takes a different path that may skip the clone.`,
     get inputSchema() {
@@ -204,7 +204,6 @@ Use a non-ephemeral box when you pass clone_repo; ephemeral creation takes a dif
             .enum(["active", "deleted"])
             .optional()
             .describe("Filter for list action: 'active' (default) or 'deleted'"),
-          ...buildBoxCommon(),
         })
         .superRefine((value, ctx) => {
           if (value.action !== "create") return;
@@ -236,7 +235,7 @@ Use a non-ephemeral box when you pass clone_repo; ephemeral creation takes a dif
     },
     handler: async (params) => {
       const { action, box_id } = params;
-      const client = getBoxClient(params);
+      const client = getBoxClient();
 
       switch (action) {
         case "create": {
@@ -251,7 +250,7 @@ Use a non-ephemeral box when you pass clone_repo; ephemeral creation takes a dif
             // Saying where the clone lands stops the model from having to
             // discover it: git tools default to the workspace root, not here.
             lines.push(
-              `The repository will be cloned to '${cloneDir}' inside the workspace. Pass folder='${cloneDir}' to box_git, and wait for it to appear (box_list) before reading files.`
+              `The repository will be cloned to '${cloneDir}' inside the workspace. Pass folder='${cloneDir}' to box_git, and wait for it to appear (box_list_files) before reading files.`
             );
           }
           lines.push(json(box));

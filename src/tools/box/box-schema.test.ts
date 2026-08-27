@@ -89,10 +89,8 @@ describe("box_edit exact matching", () => {
   });
 });
 
-// box_api_key is required unless the server was started with one, and zod skips
-// superRefine when the base object already failed, so it is always sent.
 const parseManage = (input: Record<string, unknown>) =>
-  boxManageTool.box_manage.inputSchema!.safeParse({ box_api_key: "box_test", ...input });
+  boxManageTool.box_manage.inputSchema!.safeParse(input);
 
 describe("create validation rules", () => {
   const parse = parseManage;
@@ -180,7 +178,7 @@ describe("files wire format", () => {
 });
 
 const parseRead = (input: Record<string, unknown>) =>
-  boxFilesTool.box_read.inputSchema!.safeParse({ box_api_key: "box_test", ...input });
+  boxFilesTool.box_read.inputSchema!.safeParse(input);
 
 describe("box_read schema", () => {
   it("rejects offset without length instead of silently dropping it", () => {
@@ -249,10 +247,8 @@ describe("documented limits are enforced by the schema", () => {
   it("caps box_upload at ten files", () => {
     const files = Array.from({ length: 11 }, (_unused, i) => ({ local_path: `/tmp/${i}` }));
     const schema = boxFilesTool.box_upload.inputSchema!;
-    expect(
-      schema.safeParse({ box_api_key: "box_test", box_id: "b", files: files.slice(0, 10) }).success
-    ).toBe(true);
-    expect(schema.safeParse({ box_api_key: "box_test", box_id: "b", files }).success).toBe(false);
+    expect(schema.safeParse({ box_id: "b", files: files.slice(0, 10) }).success).toBe(true);
+    expect(schema.safeParse({ box_id: "b", files }).success).toBe(false);
   });
 });
 
@@ -269,7 +265,7 @@ describe("empty search string", () => {
 
   it("is rejected by the schema", () => {
     const schema = boxFilesTool.box_edit.inputSchema!;
-    const base = { box_api_key: "box_test", box_id: "b", path: "a", new_string: "x" };
+    const base = { box_id: "b", path: "a", new_string: "x" };
     expect(schema.safeParse({ ...base, old_string: "" }).success).toBe(false);
     expect(schema.safeParse({ ...base, old_string: "a" }).success).toBe(true);
   });

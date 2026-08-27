@@ -7,7 +7,8 @@ import z from "zod";
 import { DEBUG } from ".";
 
 /**
- * Session-level guidance sent in the initialize result.
+ * Session-level guidance sent in the initialize result when Box tools are
+ * offered.
  *
  * This server also serves Redis and QStash, so the Box guidance is scoped to
  * tasks that involve a box rather than asserting anything about the session as
@@ -15,11 +16,9 @@ import { DEBUG } from ".";
  * file and shell tools are local, and nothing in the protocol reports when the
  * two get mixed.
  */
-const INSTRUCTIONS = `Manage Upstash Redis, QStash, and Box from this session.
+const BOX_INSTRUCTIONS = `Working inside an Upstash Box:
 
-Working inside an Upstash Box:
-
-A box is a remote Linux container. Its filesystem is not this machine's filesystem. Once a task is meant to happen in a box, do every step of it with the box tools: box_read, box_write and box_edit for files; box_git for git operations and for search (action 'exec' with ["grep", ...] or ["ls-files"]); box_exec for commands; box_preview to reach a server running inside the box.
+A box is a remote Linux container. Its filesystem is not this machine's filesystem. Once a task is meant to happen in a box, do every step of it with the box tools: box_read, box_write, box_edit and box_list_files for files; box_git for git operations and for search (action 'exec' with ["grep", ...] or ["ls-files"]); box_exec for commands; box_preview to reach a server running inside the box.
 
 Your own Read, Write, Edit and Bash tools act on the user's machine. Mixing them with box tools in one task splits it across two filesystems: an edit lands on one side while a command runs on the other, and neither side reports the mismatch. Decide which machine a task belongs to and stay there.
 
@@ -27,6 +26,9 @@ A box is addressed by box_id. Create one with box_manage — a workspace box nee
 
 // Function to create a new server instance with all tools registered
 export function createServerInstance() {
+  const hasAccountKey = Boolean(config.email && config.apiKey);
+  const hasBoxKey = Boolean(config.boxApiKey);
+
   const server = new McpServer(
     { name: "upstash", version: "0.1.0" },
     {
@@ -34,21 +36,23 @@ export function createServerInstance() {
         tools: {},
         logging: {},
       },
-      instructions: INSTRUCTIONS,
+      instructions: hasBoxKey ? BOX_INSTRUCTIONS : undefined,
     }
   );
 
+  // Readonly is a property of the account API key. Box tools authenticate
+  // with the Box key instead, so it says nothing about them.
   const availableTools = config.readonly
-    ? Object.fromEntries(Object.entries(tools).filter(([_, tool]) => tool.readonly))
+    ? Object.fromEntries(Object.entries(tools).filter(([_, tool]) => tool.readonly || tool.box))
     : tools;
 
-  // Started with a Box key and no account credentials: Redis, QStash and
-  // Workflow tools have nothing to authenticate with, so offering them only
-  // buys a round trip that fails.
-  const boxOnly = !config.email || !config.apiKey;
-  const scopedTools = boxOnly
-    ? Object.fromEntries(Object.entries(availableTools).filter(([name]) => name.startsWith("box_")))
-    : availableTools;
+  // Each tool is offered only when the credential it authenticates with is
+  // configured: Box tools need the Box API key, everything else needs the
+  // account email and API key. A tool without its credential only buys a
+  // round trip that fails.
+  const scopedTools = Object.fromEntries(
+    Object.entries(availableTools).filter(([_, tool]) => (tool.box ? hasBoxKey : hasAccountKey))
+  );
 
   // box_upload reads the server host's filesystem on behalf of whoever calls
   // it, and the HTTP transport authenticates nobody, so it is only offered

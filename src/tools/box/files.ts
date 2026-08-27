@@ -4,7 +4,6 @@ import path from "node:path";
 import { z } from "zod";
 import { json, tool } from "../helpers";
 import { config } from "../../config";
-import { buildBoxCommon } from "./common";
 import { getBoxClient } from "./utils";
 
 type ReadFileResponse = { content: string };
@@ -31,6 +30,7 @@ const IN_THE_BOX =
 
 export const boxFilesTool = {
   box_read: tool({
+    box: true,
     description: `Read a file from inside an Upstash Box. ${IN_THE_BOX} Use this instead of the local Read tool when working in a box.
 
 Long results are truncated before you see them, and the truncation is marked. For a large file, read it in chunks with 'offset' and 'length' rather than assuming one call returned all of it.`,
@@ -58,7 +58,6 @@ Long results are truncated before you see them, and the truncation is marked. Fo
             .literal("base64")
             .optional()
             .describe("Set to 'base64' for binary files; omit for text"),
-          ...buildBoxCommon(),
         })
         .refine((value) => value.offset === undefined || value.length !== undefined, {
           path: ["length"],
@@ -67,7 +66,7 @@ Long results are truncated before you see them, and the truncation is marked. Fo
     },
     handler: async (params) => {
       const { box_id, path, offset, length, encoding } = params;
-      const client = getBoxClient(params);
+      const client = getBoxClient();
 
       const res = await client.get<ReadFileResponse>(
         `v2/box/${box_id}/files/read`,
@@ -77,7 +76,8 @@ Long results are truncated before you see them, and the truncation is marked. Fo
     },
   }),
 
-  box_list: tool({
+  box_list_files: tool({
+    box: true,
     description: `List one directory inside an Upstash Box. ${IN_THE_BOX} This lists a single directory; to match a glob or search a repository, use box_git with action 'exec' (git ls-files / git grep).`,
     get inputSchema() {
       return z.object({
@@ -86,12 +86,11 @@ Long results are truncated before you see them, and the truncation is marked. Fo
           .string()
           .optional()
           .describe("Directory to list, e.g. 'src' (defaults to the workspace root)"),
-        ...buildBoxCommon(),
       });
     },
     handler: async (params) => {
       const { box_id, path } = params;
-      const client = getBoxClient(params);
+      const client = getBoxClient();
       const res = await client.get<ListFilesResponse>(
         `v2/box/${box_id}/files/list`,
         buildListQuery(path)
@@ -101,7 +100,8 @@ Long results are truncated before you see them, and the truncation is marked. Fo
     },
   }),
 
-  box_stat: tool({
+  box_stat_file: tool({
+    box: true,
     description: `Get metadata for a path inside an Upstash Box (type, size, modification time, inode, and a version token). ${IN_THE_BOX}`,
     get inputSchema() {
       return z.object({
@@ -111,12 +111,11 @@ Long results are truncated before you see them, and the truncation is marked. Fo
           .boolean()
           .optional()
           .describe("Follow a final symlink (default: report the link itself)"),
-        ...buildBoxCommon(),
       });
     },
     handler: async (params) => {
       const { box_id, path, follow } = params;
-      const client = getBoxClient(params);
+      const client = getBoxClient();
       const query: Record<string, string | boolean> = { path };
       if (follow !== undefined) query.follow = follow;
       const stat = await client.get<FileStat>(`v2/box/${box_id}/files/stat`, query);
@@ -125,6 +124,7 @@ Long results are truncated before you see them, and the truncation is marked. Fo
   }),
 
   box_write: tool({
+    box: true,
     description: `Write a file inside an Upstash Box, creating or overwriting it. ${IN_THE_BOX} Use this instead of the local Write tool when working in a box.`,
     get inputSchema() {
       return z.object({
@@ -135,12 +135,11 @@ Long results are truncated before you see them, and the truncation is marked. Fo
           .literal("base64")
           .optional()
           .describe("Set to 'base64' when 'content' is base64-encoded binary"),
-        ...buildBoxCommon(),
       });
     },
     handler: async (params) => {
       const { box_id, path, content, encoding } = params;
-      const client = getBoxClient(params);
+      const client = getBoxClient();
       const body: Record<string, unknown> = { path, content };
       if (encoding !== undefined) body.encoding = encoding;
       await client.post(`v2/box/${box_id}/files/write`, body);
@@ -149,6 +148,7 @@ Long results are truncated before you see them, and the truncation is marked. Fo
   }),
 
   box_edit: tool({
+    box: true,
     description: `Replace an exact string in a file inside an Upstash Box. ${IN_THE_BOX} Fails if the string is missing or appears more than once, so include enough surrounding context to make it unique. Use this instead of the local Edit tool when working in a box.`,
     get inputSchema() {
       return z.object({
@@ -156,12 +156,11 @@ Long results are truncated before you see them, and the truncation is marked. Fo
         path: z.string().describe("File path inside the box"),
         old_string: z.string().min(1).describe("Exact text to replace; must appear exactly once"),
         new_string: z.string().describe("Replacement text"),
-        ...buildBoxCommon(),
       });
     },
     handler: async (params) => {
       const { box_id, path, old_string, new_string } = params;
-      const client = getBoxClient(params);
+      const client = getBoxClient();
 
       const current = await client.get<ReadFileResponse>(`v2/box/${box_id}/files/read`, { path });
       const content = current.content ?? "";
@@ -172,18 +171,18 @@ Long results are truncated before you see them, and the truncation is marked. Fo
   }),
 
   box_mkdir: tool({
+    box: true,
     description: `Create a directory inside an Upstash Box. ${IN_THE_BOX}`,
     get inputSchema() {
       return z.object({
         box_id: z.string().describe("The box to create the directory in"),
         path: z.string().describe("Directory path inside the box"),
         parents: z.boolean().optional().describe("Create missing parents, like mkdir -p"),
-        ...buildBoxCommon(),
       });
     },
     handler: async (params) => {
       const { box_id, path, parents } = params;
-      const client = getBoxClient(params);
+      const client = getBoxClient();
       const body: Record<string, unknown> = { path };
       if (parents !== undefined) body.parents = parents;
       await client.post(`v2/box/${box_id}/files/mkdir`, body);
@@ -191,25 +190,26 @@ Long results are truncated before you see them, and the truncation is marked. Fo
     },
   }),
 
-  box_rename: tool({
+  box_rename_file: tool({
+    box: true,
     description: `Move or rename a path inside an Upstash Box. ${IN_THE_BOX}`,
     get inputSchema() {
       return z.object({
         box_id: z.string().describe("The box holding the path"),
         from: z.string().describe("Current path"),
         to: z.string().describe("New path"),
-        ...buildBoxCommon(),
       });
     },
     handler: async (params) => {
       const { box_id, from, to } = params;
-      const client = getBoxClient(params);
+      const client = getBoxClient();
       await client.post(`v2/box/${box_id}/files/rename`, { from, to });
       return `Renamed ${from} to ${to}`;
     },
   }),
 
-  box_remove: tool({
+  box_remove_file: tool({
+    box: true,
     description: `Delete a file or directory inside an Upstash Box. ${IN_THE_BOX} Removing a directory requires recursive=true.`,
     get inputSchema() {
       return z.object({
@@ -219,12 +219,11 @@ Long results are truncated before you see them, and the truncation is marked. Fo
           .boolean()
           .optional()
           .describe("Required to remove a directory and everything under it"),
-        ...buildBoxCommon(),
       });
     },
     handler: async (params) => {
       const { box_id, path, recursive } = params;
-      const client = getBoxClient(params);
+      const client = getBoxClient();
       const body: Record<string, unknown> = { path };
       if (recursive !== undefined) body.recursive = recursive;
       await client.post(`v2/box/${box_id}/files/remove`, body);
@@ -232,6 +231,7 @@ Long results are truncated before you see them, and the truncation is marked. Fo
     },
   }),
   box_upload: tool({
+    box: true,
     description: `Copy files from the machine RUNNING THIS SERVER into an Upstash Box. This is the one box tool that reads local paths, which is how uncommitted local work gets into a workspace (a clone only brings what is pushed).
 
 Paths are resolved on the server's own filesystem. When the server runs locally (stdio, the usual setup) that is the user's machine; when it runs remotely over HTTP it is the server host, and a path from the user's computer will not exist there. For content you already have in hand, use box_write instead — this is for files on disk.
@@ -255,12 +255,11 @@ Up to 10 files per call, 100 MB each.`,
           .min(1)
           .max(10)
           .describe("Files to copy in (max 10 per call)"),
-        ...buildBoxCommon(),
       });
     },
     handler: async (params) => {
       const { box_id, files } = params;
-      const client = getBoxClient(params);
+      const client = getBoxClient();
 
       const form = new FormData();
       const summary: string[] = [];

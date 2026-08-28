@@ -58,6 +58,12 @@ jobs:
   # `needs: release` gates it on a successful npm publish, so the registry is
   # never updated before the package actually exists on npm. Running as a
   # separate job means a registry hiccup still can't roll back the release.
+  #
+  # The registry validates ownership by fetching
+  # https://registry.npmjs.org/@upstash/mcp-server/<version> and checking its
+  # `mcpName` field, with no retry on its side. npm takes a little while to
+  # serve a freshly published version, so we wait for it to be visible and
+  # retry the publish before giving up.
   # NOTE: the registry CLI + schema are evolving — verify against
   # https://github.com/modelcontextprotocol/registry before relying on this.
   mcp-registry:
@@ -65,14 +71,32 @@ jobs:
     needs: release
     if: ${{ !github.event.release.prerelease }}
     runs-on: ubuntu-latest
+    env:
+      MCP_PUBLISHER_VERSION: v1.8.1
     steps:
       - uses: actions/checkout@v4
 
       - name: Sync version into server.json
         run: |
           VERSION="${GITHUB_REF_NAME#v}"
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
           jq --arg v "$VERSION" '.version = $v | (.packages[] |= (.version = $v))' server.json > server.json.tmp
           mv server.json.tmp server.json
+          cat server.json
+
+      - name: Wait for npm to serve the version
+        run: |
+          URL="https://registry.npmjs.org/@upstash/mcp-server/$VERSION"
+          for i in $(seq 1 30); do
+            if curl -fsS "$URL" | jq -e --arg n "$(jq -r .name server.json)" '.mcpName == $n' >/dev/null; then
+              echo "npm serves $VERSION with the expected mcpName"
+              exit 0
+            fi
+            echo "attempt $i: $VERSION not visible on npm yet, retrying in 10s"
+            sleep 10
+          done
+          echo "::error::npm never served $VERSION with mcpName set"
+          exit 1
 
       - name: Install mcp-publisher
         run: |
@@ -82,10 +106,20 @@ jobs:
             aarch64|arm64) ARCH=arm64 ;;
           esac
           OS=$(uname -s | tr '[:upper:]' '[:lower:]')
-          curl -fsSL "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_${OS}_${ARCH}.tar.gz" | tar xz mcp-publisher
+          curl -fsSL "https://github.com/modelcontextprotocol/registry/releases/download/${MCP_PUBLISHER_VERSION}/mcp-publisher_${OS}_${ARCH}.tar.gz" | tar xz mcp-publisher
+          ./mcp-publisher --version
 
       - name: Login (GitHub OIDC)
         run: ./mcp-publisher login github-oidc
 
       - name: Publish
-        run: ./mcp-publisher publish
+        run: |
+          for i in 1 2 3; do
+            if ./mcp-publisher publish; then
+              exit 0
+            fi
+            echo "publish attempt $i failed, retrying in 20s"
+            sleep 20
+          done
+          echo "::error::mcp-publisher publish failed after 3 attempts"
+          exit 1

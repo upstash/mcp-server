@@ -364,16 +364,6 @@ describe("box files", () => {
     expect(listed).toContain("note.txt");
   });
 
-  it("stats a path", async () => {
-    const stat = text(
-      await tools.box_stat_file.handler({
-        box_id: createdBoxId,
-        path: "e2e/note.txt",
-      })
-    );
-    expect(stat).toContain("file");
-  });
-
   it("edits an exact match and refuses an ambiguous one", async () => {
     await tools.box_edit.handler({
       box_id: createdBoxId,
@@ -416,32 +406,6 @@ describe("box files", () => {
         path: "e2e/uploaded.txt",
       })
     ).toBe("uploaded from disk\n");
-  });
-
-  it("makes, renames and removes paths", async () => {
-    await tools.box_mkdir.handler({
-      box_id: createdBoxId,
-      path: "e2e/sub",
-      parents: true,
-    });
-    await tools.box_rename_file.handler({
-      box_id: createdBoxId,
-      from: "e2e/dup.txt",
-      to: "e2e/sub/dup.txt",
-    });
-    const listed = text(
-      await tools.box_list_files.handler({
-        box_id: createdBoxId,
-        path: "e2e/sub",
-      })
-    );
-    expect(listed).toContain("dup.txt");
-
-    await tools.box_remove_file.handler({
-      box_id: createdBoxId,
-      path: "e2e/sub",
-      recursive: true,
-    });
   });
 });
 

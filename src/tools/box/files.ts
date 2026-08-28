@@ -13,14 +13,6 @@ type ReadFileResponse = { content: string };
 type FileEntry = { name: string; path: string; size: number; is_dir: boolean; mod_time: string };
 /** The list endpoint wraps its result and may return null instead of an empty array. */
 type ListFilesResponse = { files: FileEntry[] | null };
-type FileStat = {
-  type: "file" | "directory" | "symlink" | "other";
-  size: number;
-  mod_time: string;
-  inode: number;
-  version: string;
-};
-
 /**
  * Shared preamble so every file tool states the boundary.
  *
@@ -103,29 +95,6 @@ Long results are truncated before you see them, and the truncation is marked. Fo
     },
   }),
 
-  box_stat_file: tool({
-    box: true,
-    description: `Get metadata for a path inside an Upstash Box (type, size, modification time, inode, and a version token). ${IN_THE_BOX}`,
-    get inputSchema() {
-      return z.object({
-        box_id: z.string().describe("The box to inspect"),
-        path: z.string().describe("Path inside the box"),
-        follow: z
-          .boolean()
-          .optional()
-          .describe("Follow a final symlink (default: report the link itself)"),
-      });
-    },
-    handler: async (params) => {
-      const { box_id, path, follow } = params;
-      const client = getBoxClient();
-      const query: Record<string, string | boolean> = { path };
-      if (follow !== undefined) query.follow = follow;
-      const stat = await client.get<FileStat>(`v2/box/${box_id}/files/stat`, query);
-      return json(stat);
-    },
-  }),
-
   box_write: tool({
     box: true,
     description: `Write a file inside an Upstash Box, creating or overwriting it. ${IN_THE_BOX} Use this instead of the local Write tool when working in a box.`,
@@ -173,66 +142,6 @@ Long results are truncated before you see them, and the truncation is marked. Fo
     },
   }),
 
-  box_mkdir: tool({
-    box: true,
-    description: `Create a directory inside an Upstash Box. ${IN_THE_BOX}`,
-    get inputSchema() {
-      return z.object({
-        box_id: z.string().describe("The box to create the directory in"),
-        path: z.string().describe("Directory path inside the box"),
-        parents: z.boolean().optional().describe("Create missing parents, like mkdir -p"),
-      });
-    },
-    handler: async (params) => {
-      const { box_id, path, parents } = params;
-      const client = getBoxClient();
-      const body: Record<string, unknown> = { path };
-      if (parents !== undefined) body.parents = parents;
-      await client.post(`v2/box/${box_id}/files/mkdir`, body);
-      return `Created directory ${path}`;
-    },
-  }),
-
-  box_rename_file: tool({
-    box: true,
-    description: `Move or rename a path inside an Upstash Box. ${IN_THE_BOX}`,
-    get inputSchema() {
-      return z.object({
-        box_id: z.string().describe("The box holding the path"),
-        from: z.string().describe("Current path"),
-        to: z.string().describe("New path"),
-      });
-    },
-    handler: async (params) => {
-      const { box_id, from, to } = params;
-      const client = getBoxClient();
-      await client.post(`v2/box/${box_id}/files/rename`, { from, to });
-      return `Renamed ${from} to ${to}`;
-    },
-  }),
-
-  box_remove_file: tool({
-    box: true,
-    description: `Delete a file or directory inside an Upstash Box. ${IN_THE_BOX} Removing a directory requires recursive=true.`,
-    get inputSchema() {
-      return z.object({
-        box_id: z.string().describe("The box holding the path"),
-        path: z.string().describe("Path inside the box"),
-        recursive: z
-          .boolean()
-          .optional()
-          .describe("Required to remove a directory and everything under it"),
-      });
-    },
-    handler: async (params) => {
-      const { box_id, path, recursive } = params;
-      const client = getBoxClient();
-      const body: Record<string, unknown> = { path };
-      if (recursive !== undefined) body.recursive = recursive;
-      await client.post(`v2/box/${box_id}/files/remove`, body);
-      return `Removed ${path}`;
-    },
-  }),
   [BOX_UPLOAD_TOOL]: tool({
     box: true,
     description: `Copy files from the machine RUNNING THIS SERVER into an Upstash Box. This is the one box tool that reads local paths, which is how uncommitted local work gets into a workspace (a clone only brings what is pushed).

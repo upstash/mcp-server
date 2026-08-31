@@ -5,10 +5,11 @@ import { serveStdio } from "@modelcontextprotocol/server/stdio";
 import { toNodeHandler } from "@modelcontextprotocol/node";
 import { Command } from "commander";
 // eslint-disable-next-line unicorn/prefer-node-protocol
-import { createServer, type IncomingMessage } from "http";
+import path from "node:path";
+import { createServer, type IncomingMessage } from "node:http";
 import { createServerInstance } from "./server.js";
 import { config } from "./config";
-import { testConnection } from "./test-connection";
+import { testBoxConnection, testConnection } from "./test-connection";
 import { initDebugLog } from "./log";
 import "dotenv/config";
 
@@ -33,6 +34,10 @@ const program = new Command()
   .option("--box-api-key <key>", "Upstash Box API key (optional)")
   .option("--debug", "Enable debug mode")
   .option("--disable-telemetry", "Disable telemetry headers sent to Upstash APIs")
+  .option(
+    "--upload-root <path...>",
+    "Restrict box_upload to these directories. Required to offer box_upload over --transport http, which has no authentication of its own"
+  )
   .allowUnknownOption(); // let other wrappers pass through extra flags
 
 program.parse(argv, { from: "user" });
@@ -45,6 +50,7 @@ const cliOptions = program.opts<{
   boxApiKey?: string;
   debug?: boolean;
   disableTelemetry?: boolean;
+  uploadRoot?: string[];
 }>();
 
 export const DEBUG = cliOptions.debug ?? false;
@@ -83,22 +89,31 @@ async function main() {
   // Get credentials from CLI options or environment
   const email = cliOptions.email || process.env.UPSTASH_EMAIL;
   const apiKey = cliOptions.apiKey || process.env.UPSTASH_API_KEY;
+  const boxApiKey = cliOptions.boxApiKey || process.env.UPSTASH_BOX_API_KEY || "";
 
-  if (!email || !apiKey) {
+  // Box is a separate credential on a separate API, so a Box-only customer may
+  // have no account key at all. Requiring one would block them from a server
+  // whose Box tools never touch the account API.
+  const hasAccountKey = Boolean(email && apiKey);
+
+  if (!hasAccountKey && !boxApiKey) {
     console.error(
-      "Missing required credentials. Provide --email and --api-key or set UPSTASH_EMAIL and UPSTASH_API_KEY environment variables."
+      "Missing required credentials. Provide --email and --api-key (or set UPSTASH_EMAIL and UPSTASH_API_KEY) for Redis, QStash and Workflow tools, or --box-api-key alone to use only the Upstash Box tools."
     );
     process.exit(1);
   }
 
   // Set config
-  config.email = email;
-  config.apiKey = apiKey;
-  config.boxApiKey = cliOptions.boxApiKey || process.env.UPSTASH_BOX_API_KEY || "";
+  config.email = email ?? "";
+  config.apiKey = apiKey ?? "";
+  config.boxApiKey = boxApiKey;
   config.disableTelemetry = cliOptions.disableTelemetry ?? false;
+  config.transport = TRANSPORT_TYPE;
+  config.uploadRoots = (cliOptions.uploadRoot ?? []).map((root) => path.resolve(root));
 
-  // Test connection
-  await testConnection();
+  // Each credential is checked against its own API, independently of the other.
+  if (hasAccountKey) await testConnection();
+  if (boxApiKey) await testBoxConnection();
 
   const transportType = TRANSPORT_TYPE;
 

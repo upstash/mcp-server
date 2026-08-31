@@ -9,6 +9,9 @@ import { boxLogsTool } from "./logs";
 import { boxRunsTool } from "./runs";
 import { boxPreviewTool } from "./preview";
 import { boxSnapshotsTool } from "./snapshots";
+import { boxFilesTool } from "./files";
+import { boxGitTool } from "./git";
+import { config } from "../../config";
 
 const tools = {
   ...boxManageTool,
@@ -18,10 +21,14 @@ const tools = {
   ...boxRunsTool,
   ...boxPreviewTool,
   ...boxSnapshotsTool,
+  ...boxFilesTool,
+  ...boxGitTool,
 } as Record<string, CustomTool<any>>;
 
 const E2E_PREFIX = "mcp-e2e-";
-let boxApiKey: string;
+
+/** Tool handlers return a string or a list of lines; flatten for assertions. */
+const text = (result: unknown) => (Array.isArray(result) ? result.join("\n") : String(result));
 let createdBoxId: string;
 let createdSnapshotId: string;
 let agentRunId: string;
@@ -31,7 +38,7 @@ beforeAll(() => {
   if (!key) {
     throw new Error("UPSTASH_BOX_API_KEY must be set in .env file");
   }
-  boxApiKey = key;
+  config.boxApiKey = key;
 });
 
 // Box provisions snapshots asynchronously; deleting one while it is still being
@@ -48,7 +55,6 @@ async function waitForSnapshotReady(
     const result = await tools.box_snapshots.handler({
       action: "list",
       box_id: boxId,
-      box_api_key: boxApiKey,
     });
     const text = Array.isArray(result) ? result.join("\n") : String(result);
     const jsonPart = text.slice(text.indexOf("\n") + 1).trim();
@@ -77,7 +83,6 @@ afterAll(async () => {
   try {
     const result = await tools.box_manage.handler({
       action: "list",
-      box_api_key: boxApiKey,
     });
     const listText = Array.isArray(result) ? result.join("") : String(result);
     const parsed = JSON.parse(listText.replace(/^Found \d+ boxes/, "").trim() || "[]");
@@ -88,7 +93,6 @@ afterAll(async () => {
             await tools.box_manage.handler({
               action: "delete",
               box_id: box.id,
-              box_api_key: boxApiKey,
             });
             // eslint-disable-next-line no-console
             console.log(`Cleanup: deleted box ${box.id} (${box.name})`);
@@ -109,7 +113,6 @@ afterAll(async () => {
         action: "delete",
         box_id: createdBoxId,
         snapshot_id: createdSnapshotId,
-        box_api_key: boxApiKey,
       });
       // eslint-disable-next-line no-console
       console.log(`Cleanup: deleted snapshot ${createdSnapshotId}`);
@@ -128,7 +131,6 @@ describe("box_manage", () => {
       runtime: "node",
       ephemeral: true,
       ttl: 600,
-      box_api_key: boxApiKey,
     });
     const text = Array.isArray(result) ? result.join("\n") : String(result);
     expect(text).toContain("Box created successfully");
@@ -143,7 +145,6 @@ describe("box_manage", () => {
   it("lists boxes", async () => {
     const result = await tools.box_manage.handler({
       action: "list",
-      box_api_key: boxApiKey,
     });
     const text = Array.isArray(result) ? result.join("\n") : String(result);
     expect(text).toMatch(/Found \d+ boxes/);
@@ -154,7 +155,6 @@ describe("box_manage", () => {
     const result = await tools.box_manage.handler({
       action: "get",
       box_id: createdBoxId,
-      box_api_key: boxApiKey,
     });
     const text = Array.isArray(result) ? result.join("\n") : String(result);
     expect(text).toContain(createdBoxId);
@@ -170,7 +170,6 @@ describe("box_exec", () => {
     const result = await tools.box_exec.handler({
       box_id: createdBoxId,
       command: ["echo", "hello from mcp e2e"],
-      box_api_key: boxApiKey,
     });
     const text = Array.isArray(result) ? result.join("\n") : String(result);
     expect(text).toContain("hello from mcp e2e");
@@ -183,7 +182,6 @@ describe("box_agent_run", () => {
     const result = await tools.box_agent_run.handler({
       box_id: createdBoxId,
       prompt: "Echo 'agent-test-ok' to stdout using a shell command, nothing else.",
-      box_api_key: boxApiKey,
     });
     const text = Array.isArray(result) ? result.join("\n") : String(result);
     expect(text).toContain("Agent run completed");
@@ -202,7 +200,6 @@ describe("box_logs", () => {
     const result = await tools.box_logs.handler({
       box_id: createdBoxId,
       limit: 10,
-      box_api_key: boxApiKey,
     });
     const text = Array.isArray(result) ? result.join("\n") : String(result);
     // Might have logs or might be empty for a fresh box
@@ -216,7 +213,6 @@ describe("box_runs", () => {
     const result = await tools.box_runs.handler({
       action: "list",
       box_id: createdBoxId,
-      box_api_key: boxApiKey,
     });
     const text = Array.isArray(result) ? result.join("\n") : String(result);
     expect(text).toMatch(/Found \d+ runs/);
@@ -230,7 +226,6 @@ describe("box_runs", () => {
       const listResult = await tools.box_runs.handler({
         action: "list",
         box_id: createdBoxId,
-        box_api_key: boxApiKey,
       });
       const listText = Array.isArray(listResult) ? listResult.join("") : String(listResult);
       const runsJson = listText.replace(/^Found \d+ runs/, "").trim();
@@ -247,7 +242,6 @@ describe("box_runs", () => {
       action: "get",
       box_id: createdBoxId,
       run_id: runId,
-      box_api_key: boxApiKey,
     });
     const text = Array.isArray(result) ? result.join("\n") : String(result);
     expect(text).toContain(runId);
@@ -260,7 +254,6 @@ describe("box_preview", () => {
     const result = await tools.box_preview.handler({
       action: "list",
       box_id: createdBoxId,
-      box_api_key: boxApiKey,
     });
     const text = Array.isArray(result) ? result.join("\n") : String(result);
     expect(text).toMatch(/Found \d+ preview URLs/);
@@ -272,7 +265,6 @@ describe("box_preview", () => {
       action: "create",
       box_id: createdBoxId,
       port: 3000,
-      box_api_key: boxApiKey,
     });
     const text = Array.isArray(result) ? result.join("\n") : String(result);
     expect(text).toContain("Preview URL created:");
@@ -285,7 +277,6 @@ describe("box_preview", () => {
       action: "delete",
       box_id: createdBoxId,
       port: 3000,
-      box_api_key: boxApiKey,
     });
     const text = Array.isArray(result) ? result.join("\n") : String(result);
     expect(text).toContain("deleted successfully");
@@ -299,7 +290,6 @@ describe("box_snapshots", () => {
       action: "create",
       box_id: createdBoxId,
       name: `${E2E_PREFIX}snapshot-${Date.now()}`,
-      box_api_key: boxApiKey,
     });
     const text = Array.isArray(result) ? result.join("\n") : String(result);
     expect(text).toContain("Snapshot created");
@@ -315,7 +305,6 @@ describe("box_snapshots", () => {
     const result = await tools.box_snapshots.handler({
       action: "list",
       box_id: createdBoxId,
-      box_api_key: boxApiKey,
     });
     const text = Array.isArray(result) ? result.join("\n") : String(result);
     expect(text).toMatch(/Found \d+ snapshots/);
@@ -324,7 +313,6 @@ describe("box_snapshots", () => {
   it("lists all snapshots", async () => {
     const result = await tools.box_snapshots.handler({
       action: "list_all",
-      box_api_key: boxApiKey,
     });
     const text = Array.isArray(result) ? result.join("\n") : String(result);
     expect(text).toMatch(/Found \d+ snapshots total/);
@@ -339,7 +327,6 @@ describe("box_snapshots", () => {
       action: "delete",
       box_id: createdBoxId,
       snapshot_id: createdSnapshotId,
-      box_api_key: boxApiKey,
     });
     const text = Array.isArray(result) ? result.join("\n") : String(result);
     expect(text).toContain("deleted successfully");
@@ -348,13 +335,174 @@ describe("box_snapshots", () => {
   }, 90_000);
 });
 
+describe("box files", () => {
+  it("writes and reads a file back exactly", async () => {
+    await tools.box_write.handler({
+      box_id: createdBoxId,
+      path: "e2e/note.txt",
+      content: "alpha\nbeta\n",
+    });
+    const read = await tools.box_read.handler({
+      box_id: createdBoxId,
+      path: "e2e/note.txt",
+    });
+    expect(read).toBe("alpha\nbeta\n");
+  });
+
+  it("reads a bounded byte range", async () => {
+    const read = await tools.box_read.handler({
+      box_id: createdBoxId,
+      path: "e2e/note.txt",
+      offset: 0,
+      length: 5,
+    });
+    expect(read).toBe("alpha");
+  });
+
+  it("lists the directory it was given, not the workspace root", async () => {
+    const listed = text(await tools.box_list_files.handler({ box_id: createdBoxId, path: "e2e" }));
+    expect(listed).toContain("note.txt");
+  });
+
+  it("edits an exact match and refuses an ambiguous one", async () => {
+    await tools.box_edit.handler({
+      box_id: createdBoxId,
+      path: "e2e/note.txt",
+      old_string: "beta",
+      new_string: "BETA",
+    });
+    expect(
+      await tools.box_read.handler({
+        box_id: createdBoxId,
+        path: "e2e/note.txt",
+      })
+    ).toBe("alpha\nBETA\n");
+
+    await tools.box_write.handler({
+      box_id: createdBoxId,
+      path: "e2e/dup.txt",
+      content: "x\nx\n",
+    });
+    await expect(
+      tools.box_edit.handler({
+        box_id: createdBoxId,
+        path: "e2e/dup.txt",
+        old_string: "x",
+        new_string: "y",
+      })
+    ).rejects.toThrow(/appears 2 times/);
+  });
+
+  it("uploads a local file through multipart", async () => {
+    const local = `/tmp/mcp-e2e-upload-${Date.now()}.txt`;
+    await Bun.write(local, "uploaded from disk\n");
+    await tools.box_upload.handler({
+      box_id: createdBoxId,
+      files: [{ local_path: local, destination: "e2e/uploaded.txt" }],
+    });
+    expect(
+      await tools.box_read.handler({
+        box_id: createdBoxId,
+        path: "e2e/uploaded.txt",
+      })
+    ).toBe("uploaded from disk\n");
+  });
+});
+
+describe("box git", () => {
+  const repoFolder = "Hello-World";
+
+  it("clones a repository", async () => {
+    const result = text(
+      await tools.box_git.handler({
+        action: "clone",
+        box_id: createdBoxId,
+        repo: "https://github.com/octocat/Hello-World",
+      })
+    );
+    expect(result).toContain("Cloned");
+  });
+
+  it("searches tracked files with git grep", async () => {
+    const result = text(
+      await tools.box_git.handler({
+        action: "exec",
+        box_id: createdBoxId,
+        folder: repoFolder,
+        args: ["grep", "-n", "Hello"],
+      })
+    );
+    expect(result).toContain("README");
+  });
+
+  it("explains a git failure caused by a missing folder", async () => {
+    const result = text(
+      await tools.box_git.handler({
+        action: "exec",
+        box_id: createdBoxId,
+        args: ["grep", "-n", "Hello"],
+      })
+    );
+    expect(result).toContain("no 'folder' was given");
+  });
+
+  it("checks out a branch, commits, and reports status", async () => {
+    await tools.box_git.handler({
+      action: "checkout",
+      box_id: createdBoxId,
+      folder: repoFolder,
+      branch: "e2e/mcp",
+    });
+    await tools.box_write.handler({
+      box_id: createdBoxId,
+      path: `${repoFolder}/e2e.md`,
+      content: "e2e\n",
+    });
+    await tools.box_git.handler({
+      action: "exec",
+      box_id: createdBoxId,
+      folder: repoFolder,
+      args: ["add", "-A"],
+    });
+    const committed = text(
+      await tools.box_git.handler({
+        action: "commit",
+        box_id: createdBoxId,
+        folder: repoFolder,
+        message: "e2e commit",
+        author_name: "MCP E2E",
+        author_email: "e2e@upstash.com",
+      })
+    );
+    expect(committed).toContain("sha");
+
+    const branch = text(
+      await tools.box_git.handler({
+        action: "exec",
+        box_id: createdBoxId,
+        folder: repoFolder,
+        args: ["rev-parse", "--abbrev-ref", "HEAD"],
+      })
+    );
+    expect(branch).toContain("e2e/mcp");
+
+    const status = text(
+      await tools.box_git.handler({
+        action: "status",
+        box_id: createdBoxId,
+        folder: repoFolder,
+      })
+    );
+    expect(status).toContain("status");
+  });
+});
+
 describe("box_manage cleanup", () => {
   it("deletes the box", async () => {
     expect(createdBoxId).toBeDefined();
     const result = await tools.box_manage.handler({
       action: "delete",
       box_id: createdBoxId,
-      box_api_key: boxApiKey,
     });
     const text = Array.isArray(result) ? result.join("\n") : String(result);
     expect(text).toContain("deleted successfully");

@@ -1,6 +1,5 @@
 import { z } from "zod";
 import { tool } from "../helpers";
-import { buildBoxCommon } from "./common";
 import { getBoxClient } from "./utils";
 type RunResponse = {
   run_id?: string;
@@ -10,19 +9,21 @@ type RunResponse = {
 
 export const boxAgentRunTool = {
   box_agent_run: tool({
-    description: `Run an AI agent prompt inside an Upstash Box. The agent has access to shell, filesystem, and git inside the box. It reasons, executes commands, and iterates until the task is complete. This is a synchronous call that may take a while depending on the complexity of the prompt.`,
+    box: true,
+    description: `Run an AI agent prompt inside an Upstash Box. The agent has access to shell, filesystem, and git inside the box. It reasons, executes commands, and iterates until the task is complete. This is a synchronous call that may take a while depending on the complexity of the prompt.
+
+Only works on a box created WITH an agent (box_manage create with 'agent' and 'model'). A plain workspace box has no agent inside it, so this call fails there — do the work yourself with box_exec, box_git and the box file tools instead. Handing a task to this tool while you are also working in the same box means two agents editing the same files.`,
     get inputSchema() {
       return z.object({
         box_id: z.string().describe("The box ID to run the agent in"),
         prompt: z.string().describe("The natural-language prompt for the agent to execute"),
         model: z.string().optional().describe("Override the box's default LLM model for this run"),
         folder: z.string().optional().describe("Working directory inside the box for the agent"),
-        ...buildBoxCommon(),
       });
     },
     handler: async (params) => {
       const { box_id, prompt, model, folder } = params;
-      const client = getBoxClient(params);
+      const client = getBoxClient();
 
       const body: Record<string, unknown> = { prompt };
       if (model) body.model = model;

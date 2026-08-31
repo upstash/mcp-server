@@ -286,6 +286,45 @@ Open the Gemini CLI settings file at `~/.gemini/settings.json` and add Upstash t
 - _"Snapshot this Box and create 5 copies from it, assign each one a GitHub issue"_
 - _"My Box keeps failing to start, check the logs and tell me what's wrong"_
 
+## Using a Box as your workspace
+
+A Box is a remote Linux container with its own filesystem. The Box tools let an agent work inside one while the agent itself keeps running on your machine: files through `box_read` / `box_write` / `box_edit`, commands through `box_exec`, git and search through `box_git`, and a running server through `box_preview`. `box_upload` copies files into the Box from the machine running the MCP server, which is how uncommitted local work gets in — a clone only brings what you have pushed. With the usual stdio setup the server runs on your own machine, so those are your paths; if you run it remotely with `--transport http`, it reads the server host's filesystem instead, not yours.
+
+Box tools need a Box API key, which is a different credential from your Upstash account API key — the two are not interchangeable. The install command at the top of this README does not include one, so pass `--box-api-key` as well or the first Box call will fail:
+
+```sh
+claude mcp add --scope user upstash -- npx -y @upstash/mcp-server@latest \
+  --email YOUR_EMAIL --api-key YOUR_API_KEY --box-api-key YOUR_BOX_API_KEY
+```
+
+See [Upstash Box API key](#upstash-box-api-key-optional) for the environment-variable form and where to get the key.
+
+If you only use Upstash Box, you can start the server with `--box-api-key` alone and no account credentials. Redis, QStash and Workflow tools are unavailable in that mode.
+
+Create the workspace once and reuse its id:
+
+- _"Create a Box with clone_repo https://github.com/me/my-app, no agent, then wait until the repo is there"_
+- _"In that Box, run the tests and fix whatever fails"_
+- _"Commit on a new branch in the Box and open a PR"_
+
+A create returns while the container is still coming up, and `clone_repo` starts cloning only once the Box reports `idle`, so give it a moment before the first read.
+
+**The one thing to know:** your agent's own Read, Write, Edit, Bash, Glob and Grep tools still act on your machine. Nothing stops it from reading a local file and writing the change into the Box, and neither side reports the mismatch. The server sends guidance at startup and every Box tool says which machine it touches, but if you want the boundary enforced rather than suggested, add a `CLAUDE.md` to the project you're driving from:
+
+```markdown
+# Workspace
+
+The workspace for this project is an Upstash Box, not this directory.
+
+- Use `box_read`, `box_write` and `box_edit` for files; `box_exec` for commands;
+  `box_git` for git and for search (`git grep`, `git ls-files`).
+- Do not use Read, Write, Edit, Bash, Glob or Grep for project files — they act
+  on this machine. Searching locally finds the wrong tree, or nothing at all.
+- The one exception is `box_upload`: it reads paths on this machine on purpose,
+  to copy local files into the Box.
+- The box id for this project is: <paste it here>
+```
+
 ## Upstash Box API key (optional)
 
 For the MCP to interact with [Upstash Box](https://upstash.com/docs/box/overall/quickstart), the agent needs your Box API key. By default you have to paste it into the chat (or keep it in a `.env`) every time the agent runs a Box tool. To avoid this, you can wire the key into the MCP setup itself so the server picks it up automatically on startup.

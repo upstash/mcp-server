@@ -1,6 +1,5 @@
 import { z } from "zod";
 import { json, tool } from "../helpers";
-import { buildBoxCommon } from "./common";
 import { getBoxClient } from "./utils";
 type CreatePreviewResponse = {
   url: string;
@@ -12,6 +11,7 @@ type CreatePreviewResponse = {
 
 export const boxPreviewTool = {
   box_preview: tool({
+    box: true,
     description: `Manage preview URLs for web applications running inside an Upstash Box. Create public URLs to access services running on specific ports, list existing previews, or delete them.`,
     get inputSchema() {
       return z.object({
@@ -31,12 +31,11 @@ export const boxPreviewTool = {
           .boolean()
           .optional()
           .describe("Enable bearer token auth on the preview URL (create only)"),
-        ...buildBoxCommon(),
       });
     },
     handler: async (params) => {
       const { action, box_id, port, basic_auth, bearer_token } = params;
-      const client = getBoxClient(params);
+      const client = getBoxClient();
 
       switch (action) {
         case "create": {

@@ -3,6 +3,10 @@
 [![Install MCP Server](https://cursor.com/deeplink/mcp-install-dark.svg)](https://cursor.com/en/install-mcp?name=upstash&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIkB1cHN0YXNoL21jcC1zZXJ2ZXJAbGF0ZXN0IiwiLS1lbWFpbCIsIllPVVJfRU1BSUwiLCItLWFwaS1rZXkiLCJZT1VSX0FQSV9LRVkiXX0%3D)
 [<img alt="Install in VS Code" src="https://img.shields.io/badge/Install%20in%20VS%20Code-0098FF?style=for-the-badge&logo=visualstudiocode&logoColor=white">](https://insiders.vscode.dev/redirect/mcp/install?name=upstash&inputs=%5B%7B%22id%22%3A%22email%22%2C%22type%22%3A%22promptString%22%2C%22description%22%3A%22Upstash%20email%22%7D%2C%7B%22id%22%3A%22apiKey%22%2C%22type%22%3A%22promptString%22%2C%22description%22%3A%22Upstash%20API%20key%22%2C%22password%22%3Atrue%7D%5D&config=%7B%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22%40upstash%2Fmcp-server%40latest%22%2C%22--email%22%2C%22%24%7Binput%3Aemail%7D%22%2C%22--api-key%22%2C%22%24%7Binput%3AapiKey%7D%22%5D%7D)
 
+[![MCP Registry](https://img.shields.io/badge/MCP%20Registry-io.github.upstash%2Fmcp--server-3b82f6)](https://registry.modelcontextprotocol.io/v0/servers?search=io.github.upstash/mcp-server)
+[![Glama](https://img.shields.io/badge/Glama-upstash%2Fmcp--server-0f172a)](https://glama.ai/mcp/servers/upstash/mcp-server)
+[![PulseMCP](https://img.shields.io/badge/PulseMCP-upstash--redis-1f2937)](https://www.pulsemcp.com/servers/upstash-redis)
+
 The Upstash MCP server lets your agent manage and debug your Upstash resources directly, across **Redis**, **QStash**, **Workflow**, and **[Upstash Box](https://upstash.com/docs/box/overall/quickstart)**.
 
 > [!TIP]

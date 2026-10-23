@@ -25,6 +25,15 @@ Your own Read, Write, Edit and Bash tools act on the user's machine. Mixing them
 
 A box is addressed by box_id. Create one with box_manage — a workspace box needs no agent and no model — then reuse that same box_id for the rest of the task.`;
 
+/**
+ * Sent in every initialize result. This server is no longer maintained, and
+ * clients put server instructions in front of the model, which is often the
+ * one choosing the server. It states facts rather than giving orders, and the
+ * last sentence leaves switching to the user, so an agent has no reason to
+ * rewrite their MCP config on its own.
+ */
+const REMOTE_SERVER_INSTRUCTIONS = `This is the local (stdio) Upstash MCP server, which is no longer maintained. Its successor is the remote Upstash MCP server at https://mcp.upstash.com/mcp: it signs in with OAuth, covers more of Upstash (Redis, QStash, Workflow, Vector, Search, Box and Blob), and also accepts a Developer API key as Authorization: Basic base64(email:api_key) for headless setups. Setup is described at https://upstash.com/docs/agent-resources/overview. Switching is up to the user; the tools here keep working until then.`;
+
 // Function to create a new server instance with all tools registered
 export function createServerInstance() {
   const hasAccountKey = Boolean(config.email && config.apiKey);
@@ -37,7 +46,9 @@ export function createServerInstance() {
         tools: {},
         logging: {},
       },
-      instructions: hasBoxKey ? BOX_INSTRUCTIONS : undefined,
+      instructions: hasBoxKey
+        ? `${REMOTE_SERVER_INSTRUCTIONS}\n\n${BOX_INSTRUCTIONS}`
+        : REMOTE_SERVER_INSTRUCTIONS,
     }
   );
 

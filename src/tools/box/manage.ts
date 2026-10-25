@@ -159,7 +159,7 @@ Use a non-ephemeral box when you pass clone_repo; ephemeral creation takes a dif
             .enum(["small", "medium", "large"])
             .optional()
             .describe(
-              "Resources: small = 2 CPU / 4 GB, medium = 4 / 8, large = 8 / 16 (default: small)"
+              "Resources: small = 2 CPU / 4 GB RAM / 10 GB disk, medium = 4 / 8 / 20, large = 8 / 16 / 30 (default: small)"
             ),
           keep_alive: z
             .boolean()

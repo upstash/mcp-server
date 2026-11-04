@@ -143,7 +143,9 @@ Use a non-ephemeral box when you pass clone_repo; ephemeral creation takes a dif
           agent_api_key: z
             .string()
             .optional()
-            .describe("API key for the AI agent provider. Empty uses managed key"),
+            .describe(
+              'API key for the AI agent provider, or "STORED_KEY" for the key saved in the Upstash Console. Omitted, agent runs use the saved key; runs fail until the box or account has one'
+            ),
           env_vars: z
             .record(z.string(), z.string())
             .optional()

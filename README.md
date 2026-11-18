@@ -271,7 +271,6 @@ Open the Gemini CLI settings file at `~/.gemini/settings.json` and add Upstash t
 
 ### Redis
 
-- _"Start a free temporary Redis I can experiment with"_
 - _"Create a new Redis database in us-east-1"_
 - _"List my databases sorted by memory usage"_
 - _"Update the user schema by pulling from Redis"_

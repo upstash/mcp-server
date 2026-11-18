@@ -100,9 +100,7 @@ export function createServerInstance() {
           const response = handlerResponseToCallResult(result);
           log(
             "> tool result:",
-            tool.sensitive
-              ? "<redacted: tool returns credentials>"
-              : response.content.map((item) => ("text" in item ? item.text : "")).join("\n")
+            response.content.map((item) => ("text" in item ? item.text : "")).join("\n")
           );
           return response;
         } catch (error) {

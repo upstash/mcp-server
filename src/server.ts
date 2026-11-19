@@ -67,8 +67,8 @@ export function createServerInstance() {
   );
 
   // box_upload reads the server host's filesystem on behalf of whoever calls
-  // it, and the HTTP transport authenticates nobody, so it is only offered
-  // there once an operator has named the directories it may read.
+  // it. Over HTTP that caller may be on another machine, so it is only
+  // offered there once an operator has named the directories it may read.
   const uploadAllowed = config.transport !== "http" || config.uploadRoots.length > 0;
   const filteredTools = uploadAllowed
     ? scopedTools

@@ -11,6 +11,16 @@ import { createServerInstance } from "./server.js";
 import { config } from "./config";
 import { testBoxConnection, testConnection } from "./test-connection";
 import { initDebugLog } from "./log";
+import {
+  AUTH_TOKEN_ENV,
+  DEFAULT_HTTP_HOST,
+  buildGuardOptions,
+  checkHostAndOrigin,
+  checkMcpRequest,
+  generateAuthToken,
+  isLoopbackHost,
+  type GuardRejection,
+} from "./http-guard";
 import "dotenv/config";
 
 /**
@@ -29,6 +39,23 @@ if (argv.length >= 3 && argv[0] === "run") {
 const program = new Command()
   .option("--transport <stdio|http>", "transport type", "stdio")
   .option("--port <number>", "port for HTTP transport", "3000")
+  .option(
+    "--host <address>",
+    "interface the HTTP transport binds to. Anything other than loopback exposes your Upstash account to that network",
+    DEFAULT_HTTP_HOST
+  )
+  .option(
+    "--auth-token <token>",
+    `bearer token HTTP clients must send (or set ${AUTH_TOKEN_ENV}). A random one is generated when omitted`
+  )
+  .option(
+    "--allowed-host <hostname...>",
+    "extra hostnames the HTTP Host header may name (loopback names are always allowed when bound to loopback)"
+  )
+  .option(
+    "--allowed-origin <hostname...>",
+    "extra browser Origin hostnames allowed to call the HTTP transport (localhost is always allowed)"
+  )
   .option("--email <email>", "Upstash email")
   .option("--api-key <key>", "Upstash API key")
   .option("--box-api-key <key>", "Upstash Box API key (optional)")
@@ -36,7 +63,7 @@ const program = new Command()
   .option("--disable-telemetry", "Disable telemetry headers sent to Upstash APIs")
   .option(
     "--upload-root <path...>",
-    "Restrict box_upload to these directories. Required to offer box_upload over --transport http, which has no authentication of its own"
+    "Restrict box_upload to these directories. Required to offer box_upload over --transport http, which reads the server host's filesystem"
   )
   .allowUnknownOption(); // let other wrappers pass through extra flags
 
@@ -45,6 +72,10 @@ program.parse(argv, { from: "user" });
 const cliOptions = program.opts<{
   transport: string;
   port: string;
+  host: string;
+  authToken?: string;
+  allowedHost?: string[];
+  allowedOrigin?: string[];
   email?: string;
   apiKey?: string;
   boxApiKey?: string;
@@ -72,11 +103,13 @@ if (!allowedTransports.includes(cliOptions.transport)) {
 const TRANSPORT_TYPE = (cliOptions.transport || "stdio") as "stdio" | "http";
 
 // Disallow incompatible flags based on transport
-const passedPortFlag = process.argv.includes("--port");
-
-if (TRANSPORT_TYPE === "stdio" && passedPortFlag) {
-  console.error("The --port flag is not allowed when using --transport stdio.");
-  process.exit(1);
+if (TRANSPORT_TYPE === "stdio") {
+  for (const flag of ["--port", "--host", "--auth-token", "--allowed-host", "--allowed-origin"]) {
+    if (process.argv.includes(flag)) {
+      console.error(`The ${flag} flag is not allowed when using --transport stdio.`);
+      process.exit(1);
+    }
+  }
 }
 
 // HTTP port configuration
@@ -122,6 +155,33 @@ async function main() {
     const initialPort = CLI_PORT ?? 3000;
     // Keep track of which port we end up using
     let actualPort = initialPort;
+    const host = cliOptions.host || DEFAULT_HTTP_HOST;
+
+    // Every tool call runs with the operator's credentials, so no caller gets
+    // in without the token. An explicit one survives restarts; otherwise a
+    // fresh one is printed for the operator to give their client.
+    const explicitToken = cliOptions.authToken || process.env[AUTH_TOKEN_ENV];
+    const authToken = explicitToken || generateAuthToken();
+    const guard = buildGuardOptions({
+      host,
+      authToken,
+      extraAllowedHosts: cliOptions.allowedHost,
+      extraAllowedOrigins: cliOptions.allowedOrigin,
+    });
+
+    const reject = (res: any, rejection: GuardRejection) => {
+      res.writeHead(rejection.status, {
+        "Content-Type": "application/json",
+        ...(rejection.status === 401 ? { "WWW-Authenticate": "Bearer" } : {}),
+      });
+      res.end(
+        JSON.stringify({
+          jsonrpc: "2.0",
+          error: { code: -32_000, message: rejection.message },
+          id: null,
+        })
+      );
+    };
 
     // One fetch-shaped MCP handler for the process; it calls the factory once
     // per request, so serving stays stateless as it was before.
@@ -136,14 +196,31 @@ async function main() {
       const pathname = new (globalThis as any).URL(req.url || "", `http://${req.headers.host}`)
         .pathname;
 
-      // Set CORS headers for all responses
-      res.setHeader("Access-Control-Allow-Origin", "*");
-      res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS,DELETE");
-      res.setHeader(
-        "Access-Control-Allow-Headers",
-        "Content-Type, MCP-Session-Id, MCP-Protocol-Version, X-Upstash-API-Key, Upstash-API-Key, X-API-Key, Authorization"
-      );
-      res.setHeader("Access-Control-Expose-Headers", "MCP-Session-Id");
+      const headers = {
+        host: req.headers.host,
+        origin: req.headers.origin,
+        authorization: req.headers.authorization,
+      };
+
+      // Host and Origin are checked on every route, preflight included, so a
+      // DNS-rebound or cross-origin page gets nothing back.
+      const hostOrOriginRejection = checkHostAndOrigin(headers, guard);
+      if (hostOrOriginRejection) {
+        reject(res, hostOrOriginRejection);
+        return;
+      }
+
+      // CORS only for an Origin that passed the allow-list, never a wildcard.
+      if (headers.origin) {
+        res.setHeader("Access-Control-Allow-Origin", headers.origin);
+        res.setHeader("Vary", "Origin");
+        res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS,DELETE");
+        res.setHeader(
+          "Access-Control-Allow-Headers",
+          "Content-Type, MCP-Session-Id, MCP-Protocol-Version, Authorization"
+        );
+        res.setHeader("Access-Control-Expose-Headers", "MCP-Session-Id");
+      }
 
       // Handle preflight OPTIONS requests
       if (req.method === "OPTIONS") {
@@ -154,6 +231,11 @@ async function main() {
 
       try {
         if (pathname === "/mcp") {
+          const authRejection = checkMcpRequest(headers, guard);
+          if (authRejection) {
+            reject(res, authRejection);
+            return;
+          }
           // The handler builds a fresh server instance for each request
           await mcpNodeHandler(req, res);
         } else if (pathname === "/ping") {
@@ -184,11 +266,25 @@ async function main() {
         }
       });
 
-      httpServer.listen(port, () => {
+      httpServer.listen(port, host, () => {
         actualPort = port;
+        const displayHost = host.includes(":") ? `[${host}]` : host;
         console.error(
-          `Upstash MCP Server running on ${transportType.toUpperCase()} at http://localhost:${actualPort}/mcp`
+          `Upstash MCP Server running on ${transportType.toUpperCase()} at http://${displayHost}:${actualPort}/mcp`
         );
+        if (explicitToken) {
+          console.error("Clients must send: Authorization: Bearer <your --auth-token>");
+        } else {
+          console.error(`Clients must send: Authorization: Bearer ${authToken}`);
+          console.error(
+            `This token changes on every start. Pass --auth-token or set ${AUTH_TOKEN_ENV} to keep one.`
+          );
+        }
+        if (!isLoopbackHost(host)) {
+          console.warn(
+            `WARNING: bound to ${host}, not loopback. Anyone on that network who has the token can act on your Upstash account.`
+          );
+        }
       });
     };
 

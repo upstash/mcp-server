@@ -391,6 +391,20 @@ You can pass it in two ways.
 }
 ```
 
+## HTTP transport
+
+`--transport http` serves the tools on `http://127.0.0.1:3000/mcp`. Every tool call runs with your Upstash credentials, so the server protects the endpoint:
+
+- It binds to `127.0.0.1` only. Use `--host` to bind elsewhere, and only on a network you trust.
+- Every `/mcp` request must send `Authorization: Bearer <token>`. Set the token with `--auth-token` or `UPSTASH_MCP_AUTH_TOKEN`. Without one, the server prints a random token at startup.
+- It rejects a `Host` header other than a loopback name (DNS rebinding protection) while bound to loopback. Add names with `--allowed-host`.
+- It rejects browser requests from an `Origin` other than localhost. Add origin hostnames with `--allowed-origin`.
+
+```bash
+UPSTASH_MCP_AUTH_TOKEN=$(openssl rand -base64 32) \
+  npx @upstash/mcp-server@latest --transport http --port 3000 --email YOUR_EMAIL --api-key YOUR_API_KEY
+```
+
 ## Debugging
 
 If the server is misbehaving or a tool keeps failing, enable verbose logging with the `--debug` flag:
@@ -438,7 +452,7 @@ bun i          # ensure deps are current
 bun run build
 # stdio (default) — waits for an MCP client to speak JSON-RPC on stdin:
 bun dist/index.js
-# or HTTP transport, to poke it manually on a port:
+# or HTTP transport, to poke it manually on a port (send the printed bearer token):
 bun dist/index.js --transport http --port 3000
 ```
 
